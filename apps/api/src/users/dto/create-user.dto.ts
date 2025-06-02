@@ -1,4 +1,4 @@
 export class CreateUserDto {
-  email: string;
+  email!: string;
   householdId?: string;
 } 
