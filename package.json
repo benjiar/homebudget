@@ -1,0 +1,19 @@
+{
+    "name": "homebudget-turbo",
+    "private": true,
+    "workspaces": [
+      "apps/*",
+      "packages/*"
+    ],
+    "scripts": {
+      "dev": "turbo run dev",
+      "build": "turbo run build",
+      "lint": "turbo run lint",
+      "format": "prettier --write ."
+    },
+    "devDependencies": {
+      "prettier": "^3.0.0",
+      "turbo": "^1.10.12"
+    }
+  }
+  
