@@ -6,93 +6,88 @@ This document tracks the implementation status of features in the HomeBudget app
 
 ### Core Infrastructure
 - [x] Monorepo setup with Turborepo
-- [x] Basic project structure (web, api, worker)
+- [x] Basic project structure (web, api, mobile)
 - [x] Database schema design
-- [x] Prisma ORM integration
+- [x] Drizzle ORM integration
 - [x] Basic API structure with NestJS
 - [x] Basic web app structure with Next.js
+- [x] Mobile app structure with Expo
+- [x] tRPC integration for type-safe API communication
 
 ### Authentication
-- [x] Basic auth package structure
-- [x] JWT authentication setup
+- [x] Supabase authentication setup
+- [x] User registration and login
+- [x] Password reset
+- [x] Email verification
 
 ## 🟡 In Progress
 
-### Email Processing
-- [ ] Email connection setup
-- [ ] Email fetching service
-- [ ] Receipt parsing logic
-- [ ] Email processing worker
+### Household Management
+- [ ] Create household
+- [ ] Invite members
+- [ ] Manage roles (owner, member)
+- [ ] Leave household
+- [ ] Household settings
 
-### Database
-- [ ] Database migrations
-- [ ] Seed data
-- [ ] Database backup strategy
+### Expense Management
+- [ ] Add expense
+- [ ] Add income
+- [ ] Categorize transactions
+- [ ] Transaction history
+- [ ] Receipt upload
+- [ ] Expense search and filtering
+
+### Dashboard
+- [ ] Overview of household finances
+- [ ] Monthly expense reports
+- [ ] Category-wise analysis
+- [ ] Spending trends
+- [ ] Income vs Expense charts
 
 ## 🔴 Planned Features
 
 ### High Priority
-1. User Management
-   - [ ] User registration
-   - [ ] User login
-   - [ ] Password reset
-   - [ ] Email verification
+1. Admin Console
+   - [ ] User management
+   - [ ] Household management
+   - [ ] System settings
+   - [ ] Analytics dashboard
 
-2. Household Management
-   - [ ] Create household
-   - [ ] Invite members
-   - [ ] Manage roles
-   - [ ] Leave household
-
-3. Expense Management
-   - [ ] Manual expense entry
-   - [ ] Receipt upload
-   - [ ] Expense categorization
-   - [ ] Expense search and filtering
-
-4. Email Integration
-   - [ ] Gmail integration
-   - [ ] Outlook integration
-   - [ ] Email parsing rules
-   - [ ] Receipt extraction
-
-### Medium Priority
-1. Reports and Analytics
+2. Reports and Analytics
    - [ ] Monthly expense reports
    - [ ] Category-wise analysis
    - [ ] Spending trends
    - [ ] Export functionality
 
-2. Notifications
-   - [ ] Email notifications
-   - [ ] Push notifications
+3. Notifications
    - [ ] Expense alerts
    - [ ] Budget alerts
+   - [ ] Invitation notifications
 
-3. Budget Management
+### Medium Priority
+1. Budget Management
    - [ ] Set monthly budgets
    - [ ] Category budgets
    - [ ] Budget tracking
    - [ ] Budget alerts
 
-### Low Priority
-1. Advanced Features
+2. Advanced Features
    - [ ] Recurring expenses
    - [ ] Bill reminders
    - [ ] Split expenses
    - [ ] Debt tracking
 
-2. Integration
+### Low Priority
+1. Integration
    - [ ] Bank account integration
    - [ ] Credit card integration
    - [ ] Tax export
    - [ ] Receipt storage
 
-3. Mobile Features
-   - [ ] Mobile app
-   - [ ] Offline support
+2. Mobile Features
    - [ ] Receipt scanning
    - [ ] Quick expense entry
+   - [ ] Offline support
 
 ## 📊 Feature Status Legend
 
@@ -107,6 +102,8 @@ This document tracks the implementation status of features in the HomeBudget app
 - High priority features are essential for MVP
 - Medium priority features enhance user experience
 - Low priority features are nice-to-haves for future releases
+- All API communication is type-safe using tRPC
+- Backend and frontend share types through tRPC router definitions
 
 ## 🔄 Updates
 

@@ -2,7 +2,10 @@
     "name": "homebudget-turbo",
     "private": true,
     "workspaces": [
-      "apps/*",
+      "apps/web",
+      "apps/api",
+      "apps/worker",
+      "apps/mobile",
       "packages/*"
     ],
     "scripts": {

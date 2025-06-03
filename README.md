@@ -1,98 +1,108 @@
 # HomeBudget
 
-A modern expense tracking application that automatically processes receipts from your email inbox.
+A modern, type-safe expense tracking application built with Next.js, NestJS, and tRPC.
 
-## 🚀 Features
+## Features
 
-- **Email Integration**: Automatically fetches and processes receipts from your email
-- **Expense Tracking**: Categorize and track your expenses
-- **Household Management**: Share expenses with household members
-- **Modern Stack**: Built with Next.js, NestJS, and PostgreSQL
+- 🏠 Household management
+- 💰 Expense tracking
+- 📊 Financial analytics
+- 👥 Multi-user support
+- 🔒 Secure authentication
+- 📱 Mobile-friendly
+- 🔄 Type-safe API with tRPC
 
-## 🏗️ Project Structure
+## Tech Stack
 
-This is a monorepo using Turborepo, containing the following packages:
+- **Frontend**: Next.js, React, TypeScript
+- **Backend**: NestJS, tRPC
+- **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: Supabase Auth
+- **API**: tRPC for type-safe communication
+- **Mobile**: Expo (coming soon)
 
-### Apps
+## Project Structure
 
-- **Web** (`apps/web`): Next.js frontend application
-- **API** (`apps/api`): NestJS backend API
-- **Worker** (`apps/worker`): Background worker for email processing
+```
+homebudget/
+├── apps/
+│   ├── web/          # Next.js frontend
+│   ├── api/          # NestJS + tRPC backend
+│   └── mobile/       # Expo mobile app (coming soon)
+├── packages/
+│   ├── db/           # Database schema and migrations
+│   └── shared/       # Shared types and utilities
+└── package.json
+```
 
-### Packages
+## Type-Safe API with tRPC
 
-- **Parser** (`packages/parser`): Email and receipt parsing utilities
-- **Auth** (`packages/auth`): Authentication utilities
+This project uses tRPC for type-safe API communication between the frontend and backend. Key benefits:
 
-## 🛠️ Tech Stack
+- 🎯 End-to-end type safety
+- 🚀 No code generation needed
+- 📝 Automatic type inference
+- 🔍 Great developer experience
+- 🛡️ Runtime type safety
 
-- **Frontend**: Next.js 14 with App Router
-- **Backend**: NestJS
-- **Database**: PostgreSQL with Prisma ORM
-- **Email Processing**: NodeMailer
-- **Authentication**: JWT
-- **Build System**: Turborepo
+### Example Usage
 
-## 🚦 Getting Started
+```typescript
+// Backend (NestJS + tRPC)
+@trpc.router()
+export class HouseholdRouter {
+  @trpc.query()
+  async getHouseholds(ctx: Context) {
+    return this.householdService.getUserHouseholds(ctx.user.id);
+  }
 
-### Prerequisites
+  @trpc.mutation()
+  async createHousehold(
+    ctx: Context,
+    input: { name: string }
+  ) {
+    return this.householdService.createHousehold(ctx.user.id, input.name);
+  }
+}
 
-- Node.js 18+
-- PostgreSQL
-- Supabase account (for database hosting)
+// Frontend (Next.js)
+const { data: households } = api.household.getAll.useQuery();
+const createHousehold = api.household.create.useMutation();
+```
 
-### Installation
+## Getting Started
 
-1. Clone the repository:
-   ```bash
-   git clone git@github.com:benjamin-arbibe_sfrt/homebudget.git
-   cd homebudget
-   ```
-
+1. Clone the repository
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
-
 3. Set up environment variables:
-   - Copy `.env.example` to `.env` in the `apps/api` directory
-   - Update the `DATABASE_URL` with your Supabase credentials
-
-4. Initialize the database:
    ```bash
-   cd apps/api
-   npm run prisma:generate
-   npm run prisma:push
+   cp apps/api/.env.example apps/api/.env
+   cp apps/web/.env.example apps/web/.env
+   ```
+4. Start the development servers:
+   ```bash
+   pnpm dev
    ```
 
-5. Start the development servers:
-   ```bash
-   cd ../..
-   npm run dev
-   ```
+## Development
 
-## 📝 Available Scripts
+- `pnpm dev` - Start all services in development mode
+- `pnpm build` - Build all packages and applications
+- `pnpm test` - Run tests
+- `pnpm lint` - Run linting
+- `pnpm format` - Format code
 
-- `npm run dev` - Start all applications in development mode
-- `npm run build` - Build all applications
-- `npm run lint` - Run linting for all packages
-- `npm run format` - Format all code with Prettier
+## Contributing
 
-## 🔄 Development Workflow
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-1. Create a new branch for your feature
-2. Make your changes
-3. Run tests and linting
-4. Submit a pull request
+## License
 
-## 📚 Documentation
-
-For more detailed information about features and implementation status, see [FEATURES.md](./FEATURES.md).
-
-## 🤝 Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT

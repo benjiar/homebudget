@@ -7,17 +7,20 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "lint": "eslint \"src/**/*.ts\" --fix"
+    "lint": "eslint \"src/**/*.ts\" --fix",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:push": "drizzle-kit push:pg"
   },
   "dependencies": {
-    "@prisma/client": "^5.0.0"
+    "drizzle-orm": "^0.29.0",
+    "@vercel/postgres": "^0.7.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
-    "prisma": "^5.0.0",
+    "drizzle-kit": "^0.20.0",
     "typescript": "^5.0.0"
   }
 } 
