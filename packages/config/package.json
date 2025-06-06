@@ -1,0 +1,21 @@
+{
+  "name": "@homebudget/config",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "eslint-preset.js",
+    "tsconfig.base.json"
+  ],
+  "exports": {
+    "./eslint-preset": "./eslint-preset.js",
+    "./tsconfig.base": "./tsconfig.base.json"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-config-turbo": "^1.13.3"
+  }
+}
