@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AgentMigrationStateService">
+    <option name="migrationStatus" value="IN_PROGRESS" />
+    <option name="pendingSessionIds">
+      <option value="27cbf40d-07c0-42a5-a43f-99c0c227c75b" />
+      <option value="328d4f62-96e6-4de8-9df5-32432e61c13d" />
+      <option value="4a06dc99-63de-441a-96df-1ef776483e41" />
+      <option value="58a3c858-f98b-45eb-886f-92f923cc5e8e" />
+      <option value="d73d6a15-75c8-4522-a918-48e9a2210ac4" />
+    </option>
+    <option name="pendingTurns">
+      <map>
+        <entry key="27cbf40d-07c0-42a5-a43f-99c0c227c75b">
+          <value>
+            <set>
+              <option value="288f94f5-e632-4461-bfaf-f96f89463a79" />
+              <option value="35203423-227f-4792-9f26-c530e082635b" />
+              <option value="4ac59c53-6ee7-42b4-9468-4847ef308aee" />
+              <option value="5f882492-bcee-4008-9fd8-a2ef7a97a9b3" />
+              <option value="695bfc09-7043-4464-85ef-9663d5d4c805" />
+            </set>
+          </value>
+        </entry>
+        <entry key="328d4f62-96e6-4de8-9df5-32432e61c13d">
+          <value>
+            <set>
+              <option value="0b84e295-4039-43d6-b18c-c1bbfef7288f" />
+              <option value="26fd2653-1cff-4ddc-aaea-28bd52c35f69" />
+              <option value="ffe963d9-fe2a-44bc-a76c-bed72a809e63" />
+            </set>
+          </value>
+        </entry>
+        <entry key="4a06dc99-63de-441a-96df-1ef776483e41">
+          <value>
+            <set>
+              <option value="da6092c6-41b5-4806-a036-b97364557d2d" />
+            </set>
+          </value>
+        </entry>
+        <entry key="58a3c858-f98b-45eb-886f-92f923cc5e8e">
+          <value>
+            <set>
+              <option value="1b040ce4-ec93-4bfa-a309-a415f1dd61a3" />
+              <option value="2eeca3d7-3684-4791-bd57-5de86073ed98" />
+              <option value="62f7d18b-c963-4ed3-9e1b-255e0e13ee9d" />
+              <option value="81d36a9d-6c05-4f39-b043-53fcca795707" />
+              <option value="c911c3db-5447-4b65-83a2-5109f37b4c20" />
+              <option value="d0403c96-ec7e-4983-9329-12822908e112" />
+              <option value="e3e67b23-0e2d-4c95-89fe-7072c3e024aa" />
+            </set>
+          </value>
+        </entry>
+        <entry key="d73d6a15-75c8-4522-a918-48e9a2210ac4">
+          <value>
+            <set>
+              <option value="0bf022bf-9159-409b-854c-28a7eec7e07d" />
+              <option value="758d78f9-01f5-46e9-8050-7489a5ef1405" />
+              <option value="b72ba461-a0ef-45a7-8c3a-96e838aafb89" />
+              <option value="b937b31c-205e-4da8-b337-2c03e376a145" />
+              <option value="dd5030e4-390f-4775-8a7b-ce7fa1d7ae32" />
+              <option value="f5c0cf28-fe83-4a35-89a0-18fd04e6871e" />
+            </set>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <pendingWorkingSetItems>
+      <entry key="27cbf40d-07c0-42a5-a43f-99c0c227c75b" />
+      <entry key="328d4f62-96e6-4de8-9df5-32432e61c13d" />
+      <entry key="58a3c858-f98b-45eb-886f-92f923cc5e8e">
+        <set>
+          <option value="file://$PROJECT_DIR$/apps/backend/src/receipts/receipts.controller.ts" />
+          <option value="file://$PROJECT_DIR$/apps/backend/src/receipts/receipts.service.ts" />
+          <option value="file://$PROJECT_DIR$/apps/backend/src/common/decorators/household-header.decorator.ts" />
+        </set>
+      </entry>
+      <entry key="d73d6a15-75c8-4522-a918-48e9a2210ac4" />
+    </pendingWorkingSetItems>
+  </component>
+</project>

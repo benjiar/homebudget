@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
-import { HouseholdMember, HouseholdRole } from '../entities';
+import { HouseholdAccessService } from '../common/services/household-access.service';
 
 export interface CreateCategoryDto {
   name: string;
@@ -27,17 +27,15 @@ export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
-    @InjectRepository(HouseholdMember)
-    private householdMembersRepository: Repository<HouseholdMember>,
-  ) {}
+    private householdAccessService: HouseholdAccessService,
+  ) { }
 
   async create(createCategoryDto: CreateCategoryDto, userId: string): Promise<Category> {
     // Check if user has permission to create categories in this household
-    await this.checkUserPermission(createCategoryDto.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-      HouseholdRole.MEMBER,
-    ]);
+    await this.householdAccessService.checkCanManageResources(
+      createCategoryDto.household_id,
+      userId
+    );
 
     const category = this.categoriesRepository.create(createCategoryDto);
     return await this.categoriesRepository.save(category);
@@ -47,6 +45,30 @@ export class CategoriesService {
     const queryBuilder = this.categoriesRepository
       .createQueryBuilder('category')
       .where('category.household_id = :householdId', { householdId })
+      .leftJoinAndSelect('category.receipts', 'receipts')
+      .orderBy('category.name', 'ASC');
+
+    if (!includeInactive) {
+      queryBuilder.andWhere('category.is_active = true');
+    }
+
+    return await queryBuilder.getMany();
+  }
+
+  async findByHouseholdIds(householdIds: string[], includeInactive = false, userId: string): Promise<Category[]> {
+    // Get accessible household IDs (validates access and returns all if empty)
+    const accessibleHouseholdIds = await this.householdAccessService.validateAndGetHouseholdIds(
+      householdIds,
+      userId
+    );
+
+    if (accessibleHouseholdIds.length === 0) {
+      return [];
+    }
+
+    const queryBuilder = this.categoriesRepository
+      .createQueryBuilder('category')
+      .where('category.household_id IN (:...householdIds)', { householdIds: accessibleHouseholdIds })
       .leftJoinAndSelect('category.receipts', 'receipts')
       .orderBy('category.name', 'ASC');
 
@@ -74,11 +96,7 @@ export class CategoriesService {
     const category = await this.findOne(id);
 
     // Check if user has permission to update categories in this household
-    await this.checkUserPermission(category.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-      HouseholdRole.MEMBER,
-    ]);
+    await this.householdAccessService.checkCanManageResources(category.household_id, userId);
 
     // System categories can't be deleted or have their name changed
     if (category.is_system && (updateCategoryDto.name || updateCategoryDto.is_active === false)) {
@@ -93,10 +111,7 @@ export class CategoriesService {
     const category = await this.findOne(id);
 
     // Check if user has permission to delete categories in this household
-    await this.checkUserPermission(category.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-    ]);
+    await this.householdAccessService.checkCanManageHousehold(category.household_id, userId);
 
     // Can't delete system categories
     if (category.is_system) {
@@ -115,11 +130,7 @@ export class CategoriesService {
     const category = await this.findOne(id);
 
     // Check if user has permission to set budgets
-    await this.checkUserPermission(category.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-      HouseholdRole.MEMBER,
-    ]);
+    await this.householdAccessService.checkCanManageResources(category.household_id, userId);
 
     category.monthly_budget = monthly_budget;
     return await this.categoriesRepository.save(category);
@@ -143,7 +154,7 @@ export class CategoriesService {
     const endDate = new Date(year, month, 0);
 
     const categories = await this.findByHousehold(householdId);
-    
+
     const budgetOverview = await Promise.all(
       categories.map(async (category) => {
         const spent = await this.getCategorySpending(category.id, startDate, endDate);
@@ -171,21 +182,54 @@ export class CategoriesService {
     };
   }
 
-  private async checkUserPermission(
-    householdId: string,
-    userId: string,
-    allowedRoles: HouseholdRole[]
-  ): Promise<void> {
-    const membership = await this.householdMembersRepository.findOne({
-      where: {
-        user_id: userId,
-        household_id: householdId,
-        is_active: true,
-      },
-    });
+  async getHouseholdBudgetOverviewMultiple(householdIds: string[], month: number, year: number, userId: string) {
+    // Get accessible household IDs (validates access and returns all if empty)
+    const accessibleHouseholdIds = await this.householdAccessService.validateAndGetHouseholdIds(
+      householdIds,
+      userId
+    );
 
-    if (!membership || !allowedRoles.includes(membership.role)) {
-      throw new ForbiddenException('Insufficient permissions for this operation');
+    if (accessibleHouseholdIds.length === 0) {
+      return {
+        categories: [],
+        summary: {
+          total_budget: 0,
+          total_spent: 0,
+          total_remaining: 0,
+          overall_percentage: 0,
+        },
+      };
     }
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    const categories = await this.findByHouseholdIds(accessibleHouseholdIds, false, userId);
+
+    const budgetOverview = await Promise.all(
+      categories.map(async (category) => {
+        const spent = await this.getCategorySpending(category.id, startDate, endDate);
+        return {
+          category: category,
+          budget: category.monthly_budget || 0,
+          spent: spent,
+          remaining: (category.monthly_budget || 0) - spent,
+          percentage: category.monthly_budget ? (spent / category.monthly_budget) * 100 : 0,
+        };
+      })
+    );
+
+    const totalBudget = budgetOverview.reduce((sum, item) => sum + item.budget, 0);
+    const totalSpent = budgetOverview.reduce((sum, item) => sum + item.spent, 0);
+
+    return {
+      categories: budgetOverview,
+      summary: {
+        total_budget: totalBudget,
+        total_spent: totalSpent,
+        total_remaining: totalBudget - totalSpent,
+        overall_percentage: totalBudget ? (totalSpent / totalBudget) * 100 : 0,
+      },
+    };
   }
 } 

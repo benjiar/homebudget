@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useHouseholdsSync } from '@/hooks/useHouseholdGuard';
 import { Button } from '@homebudget/ui';
 import { CacheDebugger } from './CacheDebugger';
+import { MultiSelectHouseholdDropdown } from './MultiSelectHouseholdDropdown';
 
 interface LayoutProps {
   children: ReactNode;
@@ -34,7 +35,7 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
-  
+
   // Get households synchronously to prevent navigation jumps
   const households = useHouseholdsSync();
   const hasHouseholds = households.length > 0;
@@ -109,16 +110,15 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
   // Enhanced navigation link component with prefetching
   const NavigationLink = ({ item, mobile = false }: { item: any; mobile?: boolean }) => {
     const isDisabled = item.requiresHousehold && !hasHouseholds;
-    
+
     if (isDisabled) {
       return (
         <div
           key={item.name}
-          className={`group relative font-medium text-slate-400 cursor-not-allowed border border-transparent ${
-            mobile 
-              ? 'flex items-center space-x-3 px-4 py-3 rounded-xl' 
+          className={`group relative font-medium text-slate-400 cursor-not-allowed border border-transparent ${mobile
+              ? 'flex items-center space-x-3 px-4 py-3 rounded-xl'
               : 'px-4 py-2 rounded-xl'
-          }`}
+            }`}
           title="Create a household first to access this feature"
         >
           <span className={`${mobile ? 'text-lg' : 'text-sm'} opacity-50`}>{item.icon}</span>
@@ -126,21 +126,19 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
         </div>
       );
     }
-    
+
     return (
       <Link
         key={item.name}
         href={item.href}
         prefetch={true} // Enable prefetching for faster navigation
-        className={`group relative font-medium transition-all duration-300 ${
-          mobile 
-            ? 'flex items-center space-x-3 px-4 py-3 rounded-xl' 
+        className={`group relative font-medium transition-all duration-300 ${mobile
+            ? 'flex items-center space-x-3 px-4 py-3 rounded-xl'
             : 'px-4 py-2 rounded-xl'
-        } ${
-          item.current
+          } ${item.current
             ? 'text-blue-700 bg-blue-100/90 shadow-md border border-blue-200/50'
             : 'text-slate-800 hover:text-blue-700 hover:bg-blue-50/80 border border-transparent hover:border-blue-200/30 hover:scale-105'
-        }`}
+          }`}
         onClick={() => mobile && setIsMobileMenuOpen(false)}
       >
         <span className={`${mobile ? 'text-lg' : 'text-sm'} group-hover:scale-110 transition-transform duration-300`}>
@@ -173,11 +171,10 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
       <div className="min-h-screen bg-gradient-to-br from-slate-50/50 via-blue-50/30 to-indigo-50/20 transition-all duration-300">
         {showHeader && (
           <Suspense fallback={<div className="h-20 bg-white/80 backdrop-blur-lg"></div>}>
-            <header className={`sticky top-0 z-40 transition-all duration-300 ${
-              isScrolled 
-                ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-blue-500/5 border-b border-white/20' 
+            <header className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled
+                ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-blue-500/5 border-b border-white/20'
                 : 'bg-white/80 backdrop-blur-lg border-b border-white/10'
-            }`}>
+              }`}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-20">
                   {/* Logo */}
@@ -202,8 +199,14 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
                     </nav>
                   )}
 
-                  {/* User Menu / Auth Buttons */}
+                  {/* Household Selector & User Menu / Auth Buttons */}
                   <div className="flex items-center space-x-4">
+                    {user && hasHouseholds && (
+                      <div className="hidden lg:block">
+                        <MultiSelectHouseholdDropdown />
+                      </div>
+                    )}
+
                     {user ? (
                       <div className="relative">
                         <button
@@ -226,12 +229,11 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
                               {user.email}
                             </div>
                           </div>
-                          <svg 
-                            className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${
-                              isProfileMenuOpen ? 'rotate-180' : ''
-                            }`} 
-                            fill="none" 
-                            stroke="currentColor" 
+                          <svg
+                            className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${isProfileMenuOpen ? 'rotate-180' : ''
+                              }`}
+                            fill="none"
+                            stroke="currentColor"
                             viewBox="0 0 24 24"
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -258,7 +260,7 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
                                 </div>
                               </div>
                             </div>
-                            
+
                             <div className="py-2">
                               <Link
                                 href="/profile"
@@ -270,7 +272,7 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
                                 </svg>
                                 Profile Settings
                               </Link>
-                              
+
                               <button
                                 onClick={handleSignOut}
                                 disabled={loading}
@@ -305,15 +307,12 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
                         className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/60 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                       >
                         <div className="relative w-5 h-5">
-                          <span className={`absolute block h-0.5 w-5 bg-slate-700 transform transition-all duration-300 ${
-                            isMobileMenuOpen ? 'rotate-45 translate-y-0' : '-translate-y-1.5'
-                          }`}></span>
-                          <span className={`absolute block h-0.5 w-5 bg-slate-700 transform transition-all duration-300 ${
-                            isMobileMenuOpen ? 'opacity-0' : 'opacity-100'
-                          }`}></span>
-                          <span className={`absolute block h-0.5 w-5 bg-slate-700 transform transition-all duration-300 ${
-                            isMobileMenuOpen ? '-rotate-45 translate-y-0' : 'translate-y-1.5'
-                          }`}></span>
+                          <span className={`absolute block h-0.5 w-5 bg-slate-700 transform transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-0' : '-translate-y-1.5'
+                            }`}></span>
+                          <span className={`absolute block h-0.5 w-5 bg-slate-700 transform transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : 'opacity-100'
+                            }`}></span>
+                          <span className={`absolute block h-0.5 w-5 bg-slate-700 transform transition-all duration-300 ${isMobileMenuOpen ? '-rotate-45 translate-y-0' : 'translate-y-1.5'
+                            }`}></span>
                         </div>
                       </button>
                     )}
@@ -337,7 +336,7 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
 
         {/* Main Content with smooth transitions */}
         <main className="relative">
-          <Suspense 
+          <Suspense
             fallback={
               <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center space-y-4">
@@ -378,7 +377,7 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
                     The most sophisticated household budget management platform designed for modern Israeli families.
                   </p>
                 </div>
-                
+
                 <div>
                   <h4 className="font-semibold mb-4">Product</h4>
                   <ul className="space-y-2 text-slate-300">
@@ -388,7 +387,7 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
                     <li><a href="#" className="hover:text-white transition-colors duration-200">Mobile App</a></li>
                   </ul>
                 </div>
-                
+
                 <div>
                   <h4 className="font-semibold mb-4">Support</h4>
                   <ul className="space-y-2 text-slate-300">
@@ -399,7 +398,7 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
                   </ul>
                 </div>
               </div>
-              
+
               <div className="border-t border-white/20 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center">
                 <p className="text-slate-400 text-sm">
                   © 2024 HomeBudget. All rights reserved.

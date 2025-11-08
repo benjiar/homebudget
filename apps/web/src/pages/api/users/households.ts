@@ -16,15 +16,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    const data = await response.json();
-    
     if (!response.ok) {
-      return res.status(response.status).json(data);
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText || `Backend returned ${response.status}` };
+      }
+      console.error('Backend error:', response.status, errorData);
+      return res.status(response.status).json(errorData);
     }
 
+    const data = await response.json();
     return res.status(200).json(data);
   } catch (error) {
     console.error('Households fetch error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ 
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 } 

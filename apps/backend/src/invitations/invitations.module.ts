@@ -6,12 +6,14 @@ import { InvitationsService } from './invitations.service';
 import { InvitationsController } from './invitations.controller';
 import { SupabaseModule } from '../supabase/supabase.module';
 import { HouseholdsModule } from '../households/households.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Invitation, User]),
     SupabaseModule,
     HouseholdsModule,
+    UsersModule,
   ],
   controllers: [InvitationsController],
   providers: [InvitationsService],

@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Receipt } from '../entities/receipt.entity';
-import { HouseholdMember, HouseholdRole } from '../entities';
 import { Category } from '../entities/category.entity';
 import { SupabaseService } from '../supabase/supabase.service';
+import { HouseholdAccessService } from '../common/services/household-access.service';
 
 export interface CreateReceiptDto {
   title: string;
@@ -52,24 +52,22 @@ export class ReceiptsService {
   constructor(
     @InjectRepository(Receipt)
     private receiptsRepository: Repository<Receipt>,
-    @InjectRepository(HouseholdMember)
-    private householdMembersRepository: Repository<HouseholdMember>,
     @InjectRepository(Category)
     private categoriesRepository: Repository<Category>,
     private supabaseService: SupabaseService,
-  ) {}
+    private householdAccessService: HouseholdAccessService,
+  ) { }
 
   async create(createReceiptDto: CreateReceiptDto, userId: string): Promise<Receipt> {
     // Check if user has permission to add receipts to this household
-    await this.checkUserPermission(createReceiptDto.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-      HouseholdRole.MEMBER,
-    ]);
+    await this.householdAccessService.checkCanManageResources(
+      createReceiptDto.household_id,
+      userId
+    );
 
     // Verify category belongs to the household
     const category = await this.categoriesRepository.findOne({
-      where: { 
+      where: {
         id: createReceiptDto.category_id,
         household_id: createReceiptDto.household_id,
       },
@@ -144,6 +142,66 @@ export class ReceiptsService {
     return { receipts, total, summary };
   }
 
+  async findByHouseholdIds(
+    householdIds: string[],
+    filters: ReceiptFilters = {},
+    page = 1,
+    limit = 50,
+    userId: string
+  ): Promise<{ receipts: Receipt[]; total: number; summary: ReceiptSummary }> {
+    // Get accessible household IDs (validates access and returns all if empty)
+    const accessibleHouseholdIds = await this.householdAccessService.validateAndGetHouseholdIds(
+      householdIds,
+      userId
+    );
+
+    if (accessibleHouseholdIds.length === 0) {
+      return { receipts: [], total: 0, summary: { total_receipts: 0, total_amount: 0, average_amount: 0, by_category: [] } };
+    }
+
+    const queryBuilder = this.receiptsRepository
+      .createQueryBuilder('receipt')
+      .leftJoinAndSelect('receipt.category', 'category')
+      .leftJoinAndSelect('receipt.created_by', 'user')
+      .where('receipt.household_id IN (:...householdIds)', { householdIds: accessibleHouseholdIds })
+      .orderBy('receipt.receipt_date', 'DESC');
+
+    // Apply filters
+    if (filters.startDate && filters.endDate) {
+      queryBuilder.andWhere('receipt.receipt_date BETWEEN :startDate AND :endDate', {
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+      });
+    }
+    if (filters.categoryIds && filters.categoryIds.length > 0) {
+      queryBuilder.andWhere('receipt.category_id IN (:...categoryIds)', {
+        categoryIds: filters.categoryIds,
+      });
+    }
+    if (filters.minAmount !== undefined) {
+      queryBuilder.andWhere('receipt.amount >= :minAmount', { minAmount: filters.minAmount });
+    }
+    if (filters.maxAmount !== undefined) {
+      queryBuilder.andWhere('receipt.amount <= :maxAmount', { maxAmount: filters.maxAmount });
+    }
+    if (filters.search) {
+      queryBuilder.andWhere(
+        '(receipt.title ILIKE :search OR receipt.notes ILIKE :search)',
+        { search: `%${filters.search}%` }
+      );
+    }
+    // Get total count for pagination
+    const total = await queryBuilder.getCount();
+    // Apply pagination
+    const receipts = await queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
+    // Generate summary (for first household only)
+    const summary = householdIds.length > 0 ? await this.generateSummary(householdIds[0], filters) : null;
+    return { receipts, total, summary };
+  }
+
   async findOne(id: string): Promise<Receipt> {
     const receipt = await this.receiptsRepository.findOne({
       where: { id },
@@ -161,16 +219,12 @@ export class ReceiptsService {
     const receipt = await this.findOne(id);
 
     // Check if user has permission to update receipts in this household
-    await this.checkUserPermission(receipt.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-      HouseholdRole.MEMBER,
-    ]);
+    await this.householdAccessService.checkCanManageResources(receipt.household_id, userId);
 
     // If updating category, verify it belongs to the household
     if (updateReceiptDto.category_id) {
       const category = await this.categoriesRepository.findOne({
-        where: { 
+        where: {
           id: updateReceiptDto.category_id,
           household_id: receipt.household_id,
         },
@@ -189,11 +243,7 @@ export class ReceiptsService {
     const receipt = await this.findOne(id);
 
     // Check if user has permission to delete receipts in this household
-    await this.checkUserPermission(receipt.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-      HouseholdRole.MEMBER,
-    ]);
+    await this.householdAccessService.checkCanManageResources(receipt.household_id, userId);
 
     // Delete photo if it exists
     if (receipt.photo_url) {
@@ -210,14 +260,53 @@ export class ReceiptsService {
     return await this.generateSummary(householdId, { startDate, endDate });
   }
 
-  async getReceiptsByCategory(
-    householdId: string,
-    categoryId: string,
-    limit = 20
-  ): Promise<Receipt[]> {
+  async getMonthlyReportForHouseholds(householdIds: string[], month: number, year: number, userId: string): Promise<ReceiptSummary> {
+    const allowedIds = await this.householdAccessService.validateAndGetHouseholdIds(householdIds, userId);
+
+    // If user has no allowed households, return empty summary
+    if (!allowedIds || allowedIds.length === 0) {
+      return { total_receipts: 0, total_amount: 0, average_amount: 0, by_category: [] };
+    }
+
+    // Aggregate summaries across allowed households
+    let totalReceipts = 0;
+    let totalAmount = 0;
+    const categoryMap: Map<string, { category: Category; count: number; total: number }> = new Map();
+
+    for (const hid of allowedIds) {
+      const summary = await this.generateSummary(hid, { startDate: new Date(year, month - 1, 1), endDate: new Date(year, month, 0) });
+      totalReceipts += summary.total_receipts;
+      totalAmount += summary.total_amount;
+      for (const item of summary.by_category) {
+        const key = item.category.id;
+        const existing = categoryMap.get(key);
+        if (existing) {
+          existing.count += item.count;
+          existing.total += item.total;
+        } else {
+          categoryMap.set(key, { category: item.category, count: item.count, total: item.total });
+        }
+      }
+    }
+
+    const by_category = Array.from(categoryMap.values()).sort((a, b) => b.total - a.total);
+    const averageAmount = totalReceipts > 0 ? totalAmount / totalReceipts : 0;
+
+    return {
+      total_receipts: totalReceipts,
+      total_amount: totalAmount,
+      average_amount: averageAmount,
+      by_category,
+    };
+  }
+
+  async getReceiptsByCategoryMultiple(householdIds: string[], categoryId: string, limit = 20, userId: string): Promise<Receipt[]> {
+    const allowedIds = await this.householdAccessService.validateAndGetHouseholdIds(householdIds, userId);
+    if (!allowedIds || allowedIds.length === 0) return [];
+
     return await this.receiptsRepository.find({
-      where: { 
-        household_id: householdId,
+      where: {
+        household_id: In(allowedIds),
         category_id: categoryId,
       },
       relations: ['category', 'created_by'],
@@ -226,17 +315,16 @@ export class ReceiptsService {
     });
   }
 
-  async getExpensesByDateRange(
-    householdId: string,
-    startDate: Date,
-    endDate: Date
-  ): Promise<Array<{ date: string; total: number; count: number }>> {
+  async getExpensesByDateRangeMultiple(householdIds: string[], startDate: Date, endDate: Date, userId: string): Promise<Array<{ date: string; total: number; count: number }>> {
+    const allowedIds = await this.householdAccessService.validateAndGetHouseholdIds(householdIds, userId);
+    if (!allowedIds || allowedIds.length === 0) return [];
+
     const result = await this.receiptsRepository
       .createQueryBuilder('receipt')
       .select('DATE(receipt.receipt_date) as date')
       .addSelect('SUM(receipt.amount)', 'total')
       .addSelect('COUNT(*)', 'count')
-      .where('receipt.household_id = :householdId', { householdId })
+      .where('receipt.household_id IN (:...allowedIds)', { allowedIds })
       .andWhere('receipt.receipt_date BETWEEN :startDate AND :endDate', { startDate, endDate })
       .groupBy('DATE(receipt.receipt_date)')
       .orderBy('date', 'ASC')
@@ -253,11 +341,7 @@ export class ReceiptsService {
     const receipt = await this.findOne(id);
 
     // Check if user has permission to update receipts in this household
-    await this.checkUserPermission(receipt.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-      HouseholdRole.MEMBER,
-    ]);
+    await this.householdAccessService.checkCanManageResources(receipt.household_id, userId);
 
     // Delete existing photo if it exists
     if (receipt.photo_url) {
@@ -288,11 +372,7 @@ export class ReceiptsService {
     const receipt = await this.findOne(id);
 
     // Check if user has permission to update receipts in this household
-    await this.checkUserPermission(receipt.household_id, userId, [
-      HouseholdRole.OWNER,
-      HouseholdRole.ADMIN,
-      HouseholdRole.MEMBER,
-    ]);
+    await this.householdAccessService.checkCanManageResources(receipt.household_id, userId);
 
     if (!receipt.photo_url) {
       throw new NotFoundException('Receipt does not have a photo');
@@ -314,7 +394,7 @@ export class ReceiptsService {
       // Supabase public URLs format: https://project.supabase.co/storage/v1/object/public/bucket/path
       const urlParts = receipt.photo_url.split('/');
       const bucketIndex = urlParts.findIndex(part => part === 'receipt-photos');
-      
+
       if (bucketIndex !== -1 && bucketIndex < urlParts.length - 1) {
         const filePath = urlParts.slice(bucketIndex + 1).join('/');
         await this.supabaseService.deleteFile('receipt-photos', filePath);
@@ -398,22 +478,4 @@ export class ReceiptsService {
       by_category,
     };
   }
-
-  private async checkUserPermission(
-    householdId: string,
-    userId: string,
-    allowedRoles: HouseholdRole[]
-  ): Promise<void> {
-    const membership = await this.householdMembersRepository.findOne({
-      where: {
-        user_id: userId,
-        household_id: householdId,
-        is_active: true,
-      },
-    });
-
-    if (!membership || !allowedRoles.includes(membership.role)) {
-      throw new ForbiddenException('Insufficient permissions for this operation');
-    }
-  }
-} 
+}

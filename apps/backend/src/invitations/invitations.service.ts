@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { SupabaseService } from '../supabase/supabase.service';
 import { HouseholdsService } from '../households/households.service';
 import { Invitation } from '../entities/invitation.entity';
@@ -17,7 +17,7 @@ export class InvitationsService {
     private usersRepository: Repository<User>,
     private supabaseService: SupabaseService,
     private householdsService: HouseholdsService,
-  ) {}
+  ) { }
 
   async inviteMember(
     householdId: string,
@@ -69,10 +69,10 @@ export class InvitationsService {
     // Send invitation email via Supabase Auth
     try {
       const supabaseClient = this.supabaseService.getServiceClient();
-      
+
       // Create invitation URL with token
       const inviteUrl = `${process.env.FRONTEND_URL}/invite/${savedInvitation.id}`;
-      
+
       // Try to invite existing user or create new user invitation
       const { error } = await supabaseClient.auth.admin.inviteUserByEmail(
         inviteDto.email,
@@ -150,7 +150,7 @@ export class InvitationsService {
     // Check if user has permission to view invitations
     const household = await this.householdsService.findOne(householdId);
     const userMembership = household.members?.find(m => m.user_id === userId);
-    
+
     if (!userMembership || !this.canManageInvitations(userMembership.role)) {
       throw new ForbiddenException('You do not have permission to view invitations');
     }
@@ -158,6 +158,38 @@ export class InvitationsService {
     return this.invitationsRepository.find({
       where: { household_id: householdId },
       relations: ['invited_by_user'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async getHouseholdInvitationsMultiple(householdIds: string[], userId: string): Promise<Invitation[]> {
+    if (!householdIds || householdIds.length === 0) {
+      return [];
+    }
+
+    // For each household, check if user has permission
+    const allowedHouseholdIds: string[] = [];
+    for (const householdId of householdIds) {
+      try {
+        const household = await this.householdsService.findOne(householdId);
+        const userMembership = household.members?.find(m => m.user_id === userId);
+
+        if (userMembership && this.canManageInvitations(userMembership.role)) {
+          allowedHouseholdIds.push(householdId);
+        }
+      } catch (error) {
+        // Skip households that don't exist or user doesn't have access to
+        continue;
+      }
+    }
+
+    if (allowedHouseholdIds.length === 0) {
+      return [];
+    }
+
+    return this.invitationsRepository.find({
+      where: { household_id: In(allowedHouseholdIds) },
+      relations: ['invited_by_user', 'household'],
       order: { created_at: 'DESC' },
     });
   }
@@ -175,9 +207,9 @@ export class InvitationsService {
     // Check if user has permission to cancel (must be inviter or household admin/owner)
     const household = await this.householdsService.findOne(invitation.household_id);
     const userMembership = household.members?.find(m => m.user_id === userId);
-    
-    const canCancel = invitation.invited_by === userId || 
-                     (userMembership && this.canManageInvitations(userMembership.role));
+
+    const canCancel = invitation.invited_by === userId ||
+      (userMembership && this.canManageInvitations(userMembership.role));
 
     if (!canCancel) {
       throw new ForbiddenException('You do not have permission to cancel this invitation');

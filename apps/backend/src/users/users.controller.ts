@@ -25,6 +25,8 @@ export class UsersController {
 
   @Get('profile')
   async getProfile(@Request() req): Promise<User> {
+    // Ensure user exists in database (creates if doesn't exist)
+    await this.usersService.ensureUserExists(req.user);
     return this.usersService.findOne(req.user.id);
   }
 
@@ -33,6 +35,8 @@ export class UsersController {
     @Request() req,
     @Body() updateUserDto: UpdateUserRequest,
   ): Promise<User> {
+    // Ensure user exists in database (creates if doesn't exist)
+    await this.usersService.ensureUserExists(req.user);
     return this.usersService.update(req.user.id, updateUserDto);
   }
 
@@ -96,6 +100,8 @@ export class UsersController {
 
   @Get('households')
   async getUserHouseholds(@Request() req): Promise<User> {
+    // Ensure user exists in database (creates if doesn't exist)
+    await this.usersService.ensureUserExists(req.user);
     return this.usersService.getUserHouseholds(req.user.id);
   }
 } 
