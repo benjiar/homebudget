@@ -31,7 +31,7 @@ export default function HomePage() {
   const router = useRouter();
   const client = useApiClient();
   const { households, isLoading: householdsLoading } = useHouseholdGuard();
-  
+
   const [recentReceipts, setRecentReceipts] = useState<Receipt[]>([]);
   const [budgetOverview, setBudgetOverview] = useState<BudgetOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +47,7 @@ export default function HomePage() {
     // Only load data when auth session is available
     if (!authLoading && session && user && households.length > 0 && !householdsLoading) {
       loadDashboardData();
-      
+
       const isNewUser = !localStorage.getItem('welcomeShown');
       if (isNewUser) {
         setShowWelcome(true);
@@ -63,7 +63,7 @@ export default function HomePage() {
         client.get<{ receipts: Receipt[] }>('/receipts?limit=5'),
         client.get<BudgetOverview>('/categories/budget-overview').catch(() => null),
       ]);
-      
+
       setRecentReceipts(receiptsData.receipts);
       setBudgetOverview(budgetData);
     } catch (error) {
@@ -174,7 +174,7 @@ export default function HomePage() {
                     <div key={receipt.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50">
                       <div className="flex items-center space-x-4">
                         {receipt.category && (
-                          <div 
+                          <div
                             className="w-10 h-10 rounded-lg flex items-center justify-center"
                             style={{ backgroundColor: receipt.category.color }}
                           >

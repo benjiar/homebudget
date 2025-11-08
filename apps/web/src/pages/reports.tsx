@@ -10,17 +10,17 @@ import { convertToCSV, downloadCSV, generateReportFilename } from '../utils/csvE
 
 export default function ReportsPage() {
   const { user, loading, session } = useAuth();
-  const { 
-    categories, 
+  const {
+    categories,
     receipts,
     monthlyReports,
-    isLoading, 
-    message, 
-    loadCategories, 
+    isLoading,
+    message,
+    loadCategories,
     loadReceipts,
     generateMonthlyReports,
   } = useReports();
-  
+
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
@@ -47,7 +47,7 @@ export default function ReportsPage() {
   const handleExport = () => {
     if (monthlyReports.length === 0) return;
 
-    const exportData = monthlyReports.flatMap(report => 
+    const exportData = monthlyReports.flatMap(report =>
       report.categories.map(cat => ({
         month: report.monthName,
         category: cat.category.name,
@@ -155,7 +155,7 @@ export default function ReportsPage() {
                     <div className="space-y-3">
                       {report.categories.map((cat) => (
                         <div key={cat.category.id} className="flex items-center space-x-3">
-                          <div 
+                          <div
                             className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                             style={{ backgroundColor: cat.category.color }}
                           >
@@ -170,7 +170,7 @@ export default function ReportsPage() {
                             </div>
                             <div className="flex items-center space-x-2">
                               <div className="flex-1 bg-slate-200 rounded-full h-2">
-                                <div 
+                                <div
                                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                   style={{ width: `${cat.percentage}%` }}
                                 />

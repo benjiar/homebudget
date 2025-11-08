@@ -14,27 +14,27 @@ import { Receipt, CreateReceiptRequest, CreateCategoryRequest, Category } from '
 export default function ReceiptsPage() {
   const { user, loading, session } = useAuth();
   const { selectedHouseholds } = useHousehold();
-  const { 
-    receipts, 
-    isLoading, 
-    isSubmitting, 
-    message: receiptsMessage, 
+  const {
+    receipts,
+    isLoading,
+    isSubmitting,
+    message: receiptsMessage,
     currentPage,
     totalPages,
-    loadReceipts, 
-    createReceipt, 
-    updateReceipt, 
+    loadReceipts,
+    createReceipt,
+    updateReceipt,
     deleteReceipt,
     setCurrentPage,
   } = useReceipts();
-  
+
   const {
     categories,
     isLoading: isLoadingCategories,
     loadCategories,
     createCategory,
   } = useCategories();
-  
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null);
 
@@ -105,7 +105,7 @@ export default function ReceiptsPage() {
 
             <MessageAlert message={receiptsMessage} />
 
-            <ReceiptsList 
+            <ReceiptsList
               receipts={receipts}
               isLoading={isLoading}
               onEdit={startEditReceipt}
