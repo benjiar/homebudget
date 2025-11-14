@@ -1,16 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { createClient } from './supabase/api';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
 /**
- * Extract and validate the auth token from request
+ * Extract and validate the auth token from Supabase session
  */
-export async function getAuthToken(req: NextApiRequest): Promise<string | null> {
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-        return null;
-    }
-    return authHeader.substring(7);
+export async function getAuthToken(req: NextApiRequest, res: NextApiResponse): Promise<string | null> {
+    const supabase = createClient(req, res);
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.access_token ?? null;
 }
 
 /**
@@ -47,8 +46,8 @@ export async function proxyToBackend(
     const { method = req.method, body = req.body, requireAuth = true } = options;
 
     try {
-        // Get auth token
-        const token = await getAuthToken(req);
+        // Get auth token from Supabase session
+        const token = await getAuthToken(req, res);
         if (requireAuth && !token) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
@@ -88,7 +87,7 @@ export async function proxyMultipartToBackend(
     _backendPath: string
 ) {
     try {
-        const token = await getAuthToken(req);
+        const token = await getAuthToken(req, res);
         if (!token) {
             return res.status(401).json({ error: 'Unauthorized' });
         }

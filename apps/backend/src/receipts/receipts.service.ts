@@ -5,27 +5,8 @@ import { Receipt } from '../entities/receipt.entity';
 import { Category } from '../entities/category.entity';
 import { SupabaseService } from '../supabase/supabase.service';
 import { HouseholdAccessService } from '../common/services/household-access.service';
-
-export interface CreateReceiptDto {
-  title: string;
-  amount: number;
-  receipt_date: Date;
-  notes?: string;
-  photo_url?: string;
-  metadata?: Record<string, any>;
-  household_id: string;
-  category_id: string;
-}
-
-export interface UpdateReceiptDto {
-  title?: string;
-  amount?: number;
-  receipt_date?: Date;
-  notes?: string;
-  photo_url?: string;
-  metadata?: Record<string, any>;
-  category_id?: string;
-}
+import { CreateReceiptDto } from './dto/create-receipt.dto';
+import { UpdateReceiptDto } from './dto/update-receipt.dto';
 
 export interface ReceiptFilters {
   startDate?: Date;
@@ -58,7 +39,7 @@ export class ReceiptsService {
     private householdAccessService: HouseholdAccessService,
   ) { }
 
-  async create(createReceiptDto: CreateReceiptDto, userId: string): Promise<Receipt> {
+  async create(createReceiptDto: CreateReceiptDto, userId: string, photo?: Express.Multer.File): Promise<Receipt> {
     // Check if user has permission to add receipts to this household
     await this.householdAccessService.checkCanManageResources(
       createReceiptDto.household_id,
@@ -82,7 +63,14 @@ export class ReceiptsService {
       created_by_id: userId,
     });
 
-    return await this.receiptsRepository.save(receipt);
+    const savedReceipt = await this.receiptsRepository.save(receipt);
+
+    // If photo is provided, upload it
+    if (photo) {
+      return await this.uploadPhoto(savedReceipt.id, photo, userId);
+    }
+
+    return savedReceipt;
   }
 
   async findByHousehold(
@@ -215,7 +203,7 @@ export class ReceiptsService {
     return receipt;
   }
 
-  async update(id: string, updateReceiptDto: UpdateReceiptDto, userId: string): Promise<Receipt> {
+  async update(id: string, updateReceiptDto: UpdateReceiptDto, userId: string, photo?: Express.Multer.File): Promise<Receipt> {
     const receipt = await this.findOne(id);
 
     // Check if user has permission to update receipts in this household
@@ -236,7 +224,14 @@ export class ReceiptsService {
     }
 
     Object.assign(receipt, updateReceiptDto);
-    return await this.receiptsRepository.save(receipt);
+    const updatedReceipt = await this.receiptsRepository.save(receipt);
+
+    // If photo is provided, upload it
+    if (photo) {
+      return await this.uploadPhoto(updatedReceipt.id, photo, userId);
+    }
+
+    return updatedReceipt;
   }
 
   async remove(id: string, userId: string): Promise<void> {

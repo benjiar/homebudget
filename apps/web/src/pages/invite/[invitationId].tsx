@@ -5,7 +5,7 @@ import { Button } from '@homebudget/ui';
 
 export default function InvitationPage() {
   const router = useRouter();
-  const { user, session, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { invitationId } = router.query;
   const [isAccepting, setIsAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function InvitationPage() {
   }, [user, loading, router, invitationId]);
 
   const handleAcceptInvitation = async () => {
-    if (!invitationId || !session) return;
+    if (!invitationId) return;
 
     setIsAccepting(true);
     setError(null);
@@ -29,7 +29,6 @@ export default function InvitationPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
         },
       });
 
@@ -39,10 +38,10 @@ export default function InvitationPage() {
       }
 
       setSuccess(true);
-      
-      // Redirect to households page after a short delay
+
+      // Redirect to dashboard after a short delay
       setTimeout(() => {
-        router.push('/households');
+        router.push('/');
       }, 2000);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to accept invitation');
@@ -74,7 +73,7 @@ export default function InvitationPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Invitation Accepted!</h1>
           <p className="text-gray-600 mb-4">
-            You have successfully joined the household. Redirecting to your households...
+            You have successfully joined the household. Redirecting to your dashboard...
           </p>
         </div>
       </div>
@@ -111,9 +110,9 @@ export default function InvitationPage() {
           >
             {isAccepting ? 'Accepting...' : 'Accept Invitation'}
           </Button>
-          
+
           <Button
-            onClick={() => router.push('/households')}
+            onClick={() => router.push('/')}
             disabled={isAccepting}
             className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700"
           >

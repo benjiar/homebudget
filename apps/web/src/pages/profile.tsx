@@ -3,7 +3,6 @@ import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button, LoadingPage } from '@homebudget/ui';
 import { Layout } from '@/components/Layout';
-import { UpdateUserRequest, UpdatePasswordRequest } from '@homebudget/types';
 
 interface ProfileFormData {
   full_name: string;
@@ -17,7 +16,7 @@ interface PasswordFormData {
 }
 
 export default function ProfilePage() {
-  const { user, session, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'danger'>('profile');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,7 +62,6 @@ export default function ProfilePage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify(profileForm),
       });
@@ -74,9 +72,9 @@ export default function ProfilePage() {
 
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to update profile' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to update profile'
       });
     } finally {
       setIsSubmitting(false);
@@ -105,7 +103,6 @@ export default function ProfilePage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
           current_password: passwordForm.current_password,
@@ -125,9 +122,9 @@ export default function ProfilePage() {
         confirm_password: '',
       });
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to change password' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to change password'
       });
     } finally {
       setIsSubmitting(false);
@@ -145,9 +142,6 @@ export default function ProfilePage() {
     try {
       const response = await fetch('/api/users/account', {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
       });
 
       if (!response.ok) {
@@ -157,9 +151,9 @@ export default function ProfilePage() {
       // Redirect to home page after successful deletion
       router.push('/');
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to delete account' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to delete account'
       });
     } finally {
       setIsSubmitting(false);
@@ -168,9 +162,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <LoadingPage 
-        title="Loading Profile" 
-        subtitle="Please wait while we load your account settings..." 
+      <LoadingPage
+        title="Loading Profile"
+        subtitle="Please wait while we load your account settings..."
       />
     );
   }
@@ -193,11 +187,10 @@ export default function ProfilePage() {
 
           {/* Message */}
           {message && (
-            <div className={`mx-6 mt-4 p-4 rounded-xl border ${
-              message.type === 'success' 
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+            <div className={`mx-6 mt-4 p-4 rounded-xl border ${message.type === 'success'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                 : 'bg-red-50 text-red-800 border-red-200'
-            }`}>
+              }`}>
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   {message.type === 'success' ? (
@@ -229,11 +222,10 @@ export default function ProfilePage() {
                     setActiveTab(tab.id as any);
                     setMessage(null);
                   }}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === tab.id
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <span className="flex items-center space-x-2">
                     <span>{tab.icon}</span>

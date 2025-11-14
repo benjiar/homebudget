@@ -1,11 +1,14 @@
 /**
  * Centralized API client with automatic household header injection
- * Automatically adds x-household-ids header based on HouseholdContext
+ * 
+ * With SSR pattern:
+ * - Auth cookies are automatically sent to /api/* routes
+ * - No need to manually pass Authorization headers
+ * - API routes extract session from cookies server-side
  */
 
 export interface ApiClientConfig {
     householdIds?: string[];
-    token?: string;
 }
 
 export class ApiClient {
@@ -18,17 +21,13 @@ export class ApiClient {
     }
 
     /**
-     * Build headers with household IDs and auth token
+     * Build headers with household IDs
+     * Auth is handled automatically via cookies
      */
     private buildHeaders(config?: ApiClientConfig): HeadersInit {
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
         };
-
-        const token = config?.token || this.defaultConfig.token;
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
 
         const householdIds = config?.householdIds || this.defaultConfig.householdIds || [];
 
@@ -117,11 +116,8 @@ export class ApiClient {
         const url = `${this.baseUrl}${endpoint}`;
 
         // Build headers without Content-Type (browser will set it with boundary)
+        // Auth cookies are automatically sent with the request
         const headers: HeadersInit = {};
-        const token = config?.token || this.defaultConfig.token;
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
 
         const householdIds = config?.householdIds || this.defaultConfig.householdIds || [];
         if (householdIds.length > 0) {
@@ -143,17 +139,10 @@ export class ApiClient {
     }
 
     /**
-     * Update default config (useful for setting token/households globally)
+     * Update default config (useful for setting households globally)
      */
     setDefaultConfig(config: Partial<ApiClientConfig>) {
         this.defaultConfig = { ...this.defaultConfig, ...config };
-    }
-
-    /**
-     * Set auth token
-     */
-    setToken(token: string) {
-        this.defaultConfig.token = token;
     }
 
     /**

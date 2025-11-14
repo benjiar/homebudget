@@ -9,7 +9,8 @@ import { HouseholdsModule } from './households/households.module';
 import { CategoriesModule } from './categories/categories.module';
 import { ReceiptsModule } from './receipts/receipts.module';
 import { InvitationsModule } from './invitations/invitations.module';
-import { User, Household, HouseholdMember, Category, Receipt, Invitation } from './entities';
+import { BudgetsModule } from './budgets/budgets.module';
+import { User, Household, HouseholdMember, Category, Receipt, Invitation, Budget } from './entities';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { User, Household, HouseholdMember, Category, Receipt, Invitation } from 
         password: configService.get('POSTGRES_PASSWORD'),
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',
-        entities: [User, Household, HouseholdMember, Category, Receipt, Invitation],
+        entities: [User, Household, HouseholdMember, Category, Receipt, Invitation, Budget],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         ssl: {
           rejectUnauthorized: false, // Required for Supabase
@@ -49,6 +50,7 @@ import { User, Household, HouseholdMember, Category, Receipt, Invitation } from 
     CategoriesModule,
     ReceiptsModule,
     InvitationsModule,
+    BudgetsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

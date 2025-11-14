@@ -29,6 +29,10 @@ interface UseReportsResult {
     clearMessage: () => void;
 }
 
+// Module-level cache for reports data
+let cachedReportsData: Map<string, { receipts: Receipt[]; categories: Category[] }> = new Map();
+let fetchPromises: Map<string, Promise<any>> = new Map();
+
 export function useReports(): UseReportsResult {
     const client = useApiClient();
     const [categories, setCategories] = useState<Category[]>([]);
@@ -45,30 +49,89 @@ export function useReports(): UseReportsResult {
     };
 
     const loadCategories = async () => {
+        const cacheKey = 'categories';
+
+        // Check cache first
+        const cachedData = cachedReportsData.get(cacheKey);
+        if (cachedData?.categories) {
+            setCategories(cachedData.categories);
+            return;
+        }
+
+        // If already fetching, reuse the promise
+        if (fetchPromises.has(cacheKey)) {
+            try {
+                const data = await fetchPromises.get(cacheKey)!;
+                setCategories(data);
+                return;
+            } catch (error) {
+                showMessage('error', error instanceof Error ? error.message : 'Failed to load categories');
+                return;
+            }
+        }
+
         try {
-            const data = await client.get<Category[]>('/categories');
+            const fetchPromise = client.get<Category[]>('/categories');
+            fetchPromises.set(cacheKey, fetchPromise);
+
+            const data = await fetchPromise;
             setCategories(data);
+
+            // Update cache
+            const existing = cachedReportsData.get(cacheKey) || { receipts: [], categories: [] };
+            cachedReportsData.set(cacheKey, { ...existing, categories: data });
         } catch (error) {
             showMessage('error', error instanceof Error ? error.message : 'Failed to load categories');
+        } finally {
+            fetchPromises.delete(cacheKey);
         }
     };
 
     const loadReceipts = async (params?: { startDate?: string; endDate?: string }) => {
+        const searchParams = new URLSearchParams();
+        if (params?.startDate) searchParams.append('startDate', params.startDate);
+        if (params?.endDate) searchParams.append('endDate', params.endDate);
+        const cacheKey = `receipts-${searchParams.toString()}`;
+
+        // Check cache first
+        const cachedData = cachedReportsData.get(cacheKey);
+        if (cachedData?.receipts) {
+            setReceipts(cachedData.receipts);
+            setIsLoading(false);
+            return;
+        }
+
+        // If already fetching, reuse the promise
+        if (fetchPromises.has(cacheKey)) {
+            try {
+                const data = await fetchPromises.get(cacheKey)!;
+                setReceipts(data.receipts);
+                setIsLoading(false);
+                return;
+            } catch (error) {
+                showMessage('error', error instanceof Error ? error.message : 'Failed to load receipts');
+                setIsLoading(false);
+                return;
+            }
+        }
+
         setIsLoading(true);
         try {
-            const searchParams = new URLSearchParams();
-            if (params?.startDate) searchParams.append('startDate', params.startDate);
-            if (params?.endDate) searchParams.append('endDate', params.endDate);
-
-            const data = await client.get<{ receipts: Receipt[] }>(
+            const fetchPromise = client.get<{ receipts: Receipt[] }>(
                 `/receipts${searchParams.toString() ? '?' + searchParams.toString() : ''}`
             );
+            fetchPromises.set(cacheKey, fetchPromise);
 
+            const data = await fetchPromise;
             setReceipts(data.receipts);
+
+            // Update cache
+            cachedReportsData.set(cacheKey, { receipts: data.receipts, categories: [] });
         } catch (error) {
             showMessage('error', error instanceof Error ? error.message : 'Failed to load receipts');
         } finally {
             setIsLoading(false);
+            fetchPromises.delete(cacheKey);
         }
     };
 

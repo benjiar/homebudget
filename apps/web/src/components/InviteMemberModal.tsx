@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { HouseholdRole } from '@homebudget/types';
-import { useAuth } from '../contexts/AuthContext';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -10,7 +9,6 @@ interface InviteMemberModalProps {
 }
 
 export default function InviteMemberModal({ isOpen, onClose, householdId, onInviteSent }: InviteMemberModalProps) {
-  const { session } = useAuth();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<HouseholdRole>(HouseholdRole.MEMBER);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +26,6 @@ export default function InviteMemberModal({ isOpen, onClose, householdId, onInvi
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ email: email.trim(), role }),
       });

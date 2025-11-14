@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Body,
   Param,
   Delete,
   Query,
@@ -20,12 +19,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Express } from 'express';
 import { SupabaseAuthGuard } from '../supabase/supabase-auth.guard';
-import {
-  ReceiptsService,
-  CreateReceiptDto,
-  UpdateReceiptDto,
-  ReceiptFilters,
-} from './receipts.service';
+import { ReceiptsService, ReceiptFilters } from './receipts.service';
+import { CreateReceiptDto } from './dto/create-receipt.dto';
+import { UpdateReceiptDto } from './dto/update-receipt.dto';
 import { Receipt } from '../entities/receipt.entity';
 import { HouseholdHeader } from '../common/decorators/household-header.decorator';
 
@@ -34,16 +30,60 @@ import { HouseholdHeader } from '../common/decorators/household-header.decorator
 export class ReceiptsController {
   constructor(private readonly receiptsService: ReceiptsService) { }
 
-  // Create new receipt
+  // Create new receipt (with optional photo upload)
   @Post()
+  @UseInterceptors(FileInterceptor('photo'))
   async create(
-    @Body() createReceiptDto: CreateReceiptDto,
     @Request() req: any,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 15 * 1024 * 1024 }), // 15MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|pdf)$/ }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    photo: Express.Multer.File,
   ): Promise<Receipt> {
-    return this.receiptsService.create(createReceiptDto, req.user.id);
-  }
+    console.log('=== CREATE RECEIPT REQUEST ===');
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('Content-Type:', req.headers['content-type']);
+    console.log('Body fields:', Object.keys(req.body));
+    console.log('Body content:', JSON.stringify(req.body, null, 2));
+    console.log('Photo file:', photo ? {
+      fieldname: photo.fieldname,
+      originalname: photo.originalname,
+      mimetype: photo.mimetype,
+      size: photo.size,
+    } : 'No photo');
+    console.log('User ID:', req.user?.id);
 
-  // Get receipts by household(s)
+    // Extract and transform FormData fields from request body
+    const body = req.body;
+
+    const createReceiptDto: CreateReceiptDto = {
+      title: body.title,
+      amount: parseFloat(body.amount),
+      receipt_date: body.receipt_date,
+      notes: body.notes && body.notes !== 'undefined' ? body.notes : undefined,
+      household_id: body.household_id,
+      category_id: body.category_id,
+      photo_url: body.photo_url,
+      metadata: body.metadata,
+    };
+
+    console.log('Transformed DTO:', JSON.stringify(createReceiptDto, null, 2));
+
+    try {
+      const result = await this.receiptsService.create(createReceiptDto, req.user.id, photo);
+      console.log('Receipt created successfully:', result.id);
+      return result;
+    } catch (error) {
+      console.error('Error creating receipt:', error);
+      throw error;
+    }
+  }  // Get receipts by household(s)
   @Get()
   async findByHouseholds(
     @HouseholdHeader() householdIds: string[],
@@ -84,17 +124,39 @@ export class ReceiptsController {
     return this.receiptsService.findOne(id);
   }
 
-  // Update receipt
+  // Update receipt (with optional photo upload)
   @Patch(':id')
+  @UseInterceptors(FileInterceptor('photo'))
   async update(
     @Param('id') id: string,
-    @Body() updateReceiptDto: UpdateReceiptDto,
     @Request() req: any,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 15 * 1024 * 1024 }), // 15MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|pdf)$/ }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    photo: Express.Multer.File,
   ): Promise<Receipt> {
-    return this.receiptsService.update(id, updateReceiptDto, req.user.id);
+    // Extract and transform FormData fields from request body
+    const body = req.body;
+    const updateReceiptDto: UpdateReceiptDto = {};
+
+    if (body.title !== undefined) updateReceiptDto.title = body.title;
+    if (body.amount !== undefined) updateReceiptDto.amount = parseFloat(body.amount);
+    if (body.receipt_date !== undefined) updateReceiptDto.receipt_date = body.receipt_date;
+    if (body.notes !== undefined && body.notes !== 'undefined') updateReceiptDto.notes = body.notes;
+    if (body.category_id !== undefined) updateReceiptDto.category_id = body.category_id;
+    if (body.photo_url !== undefined) updateReceiptDto.photo_url = body.photo_url;
+    if (body.metadata !== undefined) updateReceiptDto.metadata = body.metadata;
+
+    return this.receiptsService.update(id, updateReceiptDto, req.user.id, photo);
   }
 
-  // Upload photo for a receipt
+  // Upload photo/document for a receipt
   @Post(':id/photo')
   @UseInterceptors(FileInterceptor('photo'))
   async uploadPhoto(
@@ -102,8 +164,8 @@ export class ReceiptsController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
-          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp)$/ }),
+          new MaxFileSizeValidator({ maxSize: 15 * 1024 * 1024 }), // 15MB
+          new FileTypeValidator({ fileType: /(jpg|jpeg|png|webp|pdf)$/ }),
         ],
       }),
     )

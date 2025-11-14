@@ -31,7 +31,7 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
     try {
       // Extract invitation ID from URL if a full URL is pasted
       let extractedId = invitationId.trim();
-      
+
       // Check if it's a full URL and extract the ID
       const urlMatch = extractedId.match(/\/invite\/([a-f0-9-]+)/i);
       if (urlMatch) {

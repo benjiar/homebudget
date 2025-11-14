@@ -3,36 +3,21 @@ import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button, LoadingPage, LoadingCard } from '@homebudget/ui';
 import { Layout } from '@/components/Layout';
-import { 
-  Household, 
-  HouseholdRole, 
-  Currency 
+import {
+  Household,
+  HouseholdRole
 } from '@homebudget/types';
 import InviteMemberModal from '../../components/InviteMemberModal';
 
-interface UpdateHouseholdFormData {
-  name: string;
-  description: string;
-  currency: Currency;
-}
-
 export default function HouseholdDetailPage() {
-  const { user, session, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const { id } = router.query;
   const [household, setHousehold] = useState<Household | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'members' | 'settings'>('overview');
-  const [showEditForm, setShowEditForm] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // Edit household form state
-  const [editForm, setEditForm] = useState<UpdateHouseholdFormData>({
-    name: '',
-    description: '',
-    currency: Currency.USD,
-  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -48,25 +33,10 @@ export default function HouseholdDetailPage() {
     }
   }, [id, user]);
 
-  // Initialize edit form when household loads
-  useEffect(() => {
-    if (household) {
-      setEditForm({
-        name: household.name,
-        description: household.description || '',
-        currency: household.currency as Currency,
-      });
-    }
-  }, [household]);
-
   const loadHousehold = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/households/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-      });
+      const response = await fetch(`/api/households/${id}`);
 
       if (!response.ok) {
         throw new Error('Failed to load household');
@@ -75,9 +45,9 @@ export default function HouseholdDetailPage() {
       const data = await response.json();
       setHousehold(data);
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to load household' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to load household'
       });
     } finally {
       setIsLoading(false);
@@ -88,11 +58,6 @@ export default function HouseholdDetailPage() {
     if (!household || !user) return null;
     const membership = household.members?.find(m => m.user_id === user.id);
     return membership?.role || null;
-  };
-
-  const canEditHousehold = (): boolean => {
-    const role = getUserRole();
-    return role === HouseholdRole.OWNER || role === HouseholdRole.ADMIN;
   };
 
   const getRoleColor = (role: HouseholdRole): string => {
@@ -123,9 +88,9 @@ export default function HouseholdDetailPage() {
   // Loading state
   if (loading) {
     return (
-      <LoadingPage 
-        title="Loading" 
-        subtitle="Please wait while we load your data..." 
+      <LoadingPage
+        title="Loading"
+        subtitle="Please wait while we load your data..."
       />
     );
   }
@@ -165,23 +130,14 @@ export default function HouseholdDetailPage() {
               ) : null}
             </div>
           </div>
-          {canEditHousehold() && !isLoading && (
-            <Button
-              onClick={() => setShowEditForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm w-full sm:w-auto"
-            >
-              Edit Household
-            </Button>
-          )}
         </div>
 
         {/* Message */}
         {message && (
-          <div className={`mb-6 p-4 rounded-xl border ${
-            message.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+          <div className={`mb-6 p-4 rounded-xl border ${message.type === 'success'
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
               : 'bg-red-50 text-red-800 border-red-200'
-          }`}>
+            }`}>
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 {message.type === 'success' ? (
@@ -210,11 +166,10 @@ export default function HouseholdDetailPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                }`}
+                  }`}
                 aria-current={activeTab === tab.id ? 'page' : undefined}
               >
                 <span className="flex items-center space-x-2">
@@ -317,7 +272,7 @@ export default function HouseholdDetailPage() {
                 <div className="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
                   <h3 className="text-lg font-semibold text-slate-900">Members</h3>
                   {canInviteMembers() && (
-                    <Button 
+                    <Button
                       onClick={() => setShowInviteModal(true)}
                       className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
                     >
@@ -377,22 +332,10 @@ export default function HouseholdDetailPage() {
               <div className="bg-white rounded-xl shadow-sm border border-slate-200/60 p-6">
                 <h3 className="text-lg font-semibold text-slate-900 mb-6">Household Settings</h3>
                 <div className="space-y-8">
-                  {canEditHousehold() && (
-                    <div>
-                      <h4 className="text-md font-medium text-slate-900 mb-3">General Settings</h4>
-                      <Button
-                        onClick={() => setShowEditForm(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        Edit Household Info
-                      </Button>
-                    </div>
-                  )}
-                  
-                  <div className="pt-6 border-t border-slate-200">
+                  <div>
                     <h4 className="text-md font-medium text-red-900 mb-3">Danger Zone</h4>
                     <p className="text-sm text-slate-600 mb-4">
-                      {getUserRole() === HouseholdRole.OWNER 
+                      {getUserRole() === HouseholdRole.OWNER
                         ? 'Permanently delete this household and all its data.'
                         : 'Leave this household.'
                       }

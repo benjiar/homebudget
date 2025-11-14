@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useApiClient } from './useApiClient';
 import { Category, CreateCategoryRequest, UpdateCategoryRequest } from '@homebudget/types';
 
@@ -7,12 +7,16 @@ interface UseCategoriesResult {
     isLoading: boolean;
     isSubmitting: boolean;
     message: { type: 'success' | 'error'; text: string } | null;
-    loadCategories: () => Promise<void>;
+    loadCategories: (force?: boolean) => Promise<void>;
     createCategory: (data: CreateCategoryRequest) => Promise<Category>;
     updateCategory: (id: string, data: UpdateCategoryRequest) => Promise<Category>;
     deleteCategory: (id: string) => Promise<void>;
     clearMessage: () => void;
 }
+
+// Module-level cache to prevent duplicate API calls
+let cachedCategories: Category[] | null = null;
+let fetchPromise: Promise<Category[]> | null = null;
 
 export function useCategories(): UseCategoriesResult {
     const client = useApiClient();
@@ -20,6 +24,7 @@ export function useCategories(): UseCategoriesResult {
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const hasFetchedRef = useRef(false);
 
     const clearMessage = () => setMessage(null);
 
@@ -28,15 +33,44 @@ export function useCategories(): UseCategoriesResult {
         setTimeout(() => setMessage(null), 3000);
     };
 
-    const loadCategories = async () => {
+    const loadCategories = async (force = false) => {
+        // Return cached data if available and not forcing refresh
+        if (cachedCategories && !force && hasFetchedRef.current) {
+            setCategories(cachedCategories);
+            setIsLoading(false);
+            return;
+        }
+
+        // If already fetching, reuse the existing promise
+        if (fetchPromise) {
+            try {
+                const data = await fetchPromise;
+                setCategories(data);
+                setIsLoading(false);
+                return;
+            } catch (error) {
+                showMessage('error', error instanceof Error ? error.message : 'Failed to load categories');
+                setIsLoading(false);
+                return;
+            }
+        }
+
         setIsLoading(true);
         try {
-            const data = await client.get<Category[]>('/categories');
+            // Create a shared promise for concurrent calls
+            fetchPromise = client.get<Category[]>('/categories');
+            const data = await fetchPromise;
+
+            // Update cache
+            cachedCategories = data;
+            hasFetchedRef.current = true;
+
             setCategories(data);
         } catch (error) {
             showMessage('error', error instanceof Error ? error.message : 'Failed to load categories');
         } finally {
             setIsLoading(false);
+            fetchPromise = null; // Clear promise after completion
         }
     };
 
@@ -45,7 +79,7 @@ export function useCategories(): UseCategoriesResult {
         try {
             const newCategory = await client.post<Category>('/categories', data);
             showMessage('success', 'Category created successfully!');
-            await loadCategories();
+            await loadCategories(true); // Force refresh after create
             return newCategory;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to create category';
@@ -61,7 +95,7 @@ export function useCategories(): UseCategoriesResult {
         try {
             const updatedCategory = await client.patch<Category>(`/categories/${id}`, data);
             showMessage('success', 'Category updated successfully!');
-            await loadCategories();
+            await loadCategories(true); // Force refresh after update
             return updatedCategory;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to update category';
@@ -80,7 +114,7 @@ export function useCategories(): UseCategoriesResult {
         try {
             await client.delete(`/categories/${id}`);
             showMessage('success', 'Category deleted successfully!');
-            await loadCategories();
+            await loadCategories(true); // Force refresh after delete
         } catch (error) {
             showMessage('error', error instanceof Error ? error.message : 'Failed to delete category');
         }

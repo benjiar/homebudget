@@ -3,7 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
-import { useHouseholdsSync } from '@/hooks/useHouseholdGuard';
+import { useHousehold } from '@/contexts/HouseholdContext';
 import { Button } from '@homebudget/ui';
 import { CacheDebugger } from './CacheDebugger';
 import { MultiSelectHouseholdDropdown } from './MultiSelectHouseholdDropdown';
@@ -36,8 +36,8 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
   const [isScrolled, setIsScrolled] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // Get households synchronously to prevent navigation jumps
-  const households = useHouseholdsSync();
+  // Get households from context
+  const { households } = useHousehold();
   const hasHouseholds = households.length > 0;
 
   // Handle router events for seamless navigation
@@ -92,9 +92,9 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
   const navigation = [
     { name: 'Dashboard', href: '/', icon: '🏠', current: router.pathname === '/', requiresHousehold: false },
     { name: 'Receipts', href: '/receipts', icon: '📄', current: router.pathname === '/receipts', requiresHousehold: true },
-    { name: 'Budget', href: '/budget', icon: '📊', current: router.pathname === '/budget', requiresHousehold: true },
+    { name: 'Budgets', href: '/budgets', icon: '�', current: router.pathname === '/budgets', requiresHousehold: true },
     { name: 'Categories', href: '/categories', icon: '🏷️', current: router.pathname === '/categories', requiresHousehold: true },
-    { name: 'Households', href: '/households', icon: '🏠', current: router.pathname === '/households', requiresHousehold: false },
+    { name: 'Households', href: '/households', icon: '�️', current: router.pathname === '/households', requiresHousehold: false },
     { name: 'Reports', href: '/reports', icon: '📊', current: router.pathname === '/reports', requiresHousehold: true }
   ];
 
@@ -116,8 +116,8 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
         <div
           key={item.name}
           className={`group relative font-medium text-slate-400 cursor-not-allowed border border-transparent ${mobile
-              ? 'flex items-center space-x-3 px-4 py-3 rounded-xl'
-              : 'px-4 py-2 rounded-xl'
+            ? 'flex items-center space-x-3 px-4 py-3 rounded-xl'
+            : 'px-4 py-2 rounded-xl'
             }`}
           title="Create a household first to access this feature"
         >
@@ -133,8 +133,8 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
         href={item.href}
         prefetch={true} // Enable prefetching for faster navigation
         className={`group relative font-medium transition-all duration-300 ${mobile
-            ? 'flex items-center space-x-3 px-4 py-3 rounded-xl'
-            : 'px-4 py-2 rounded-xl'
+          ? 'flex items-center space-x-3 px-4 py-3 rounded-xl'
+          : 'px-4 py-2 rounded-xl'
           } ${item.current
             ? 'text-blue-700 bg-blue-100/90 shadow-md border border-blue-200/50'
             : 'text-slate-800 hover:text-blue-700 hover:bg-blue-50/80 border border-transparent hover:border-blue-200/30 hover:scale-105'
@@ -172,8 +172,8 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
         {showHeader && (
           <Suspense fallback={<div className="h-20 bg-white/80 backdrop-blur-lg"></div>}>
             <header className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled
-                ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-blue-500/5 border-b border-white/20'
-                : 'bg-white/80 backdrop-blur-lg border-b border-white/10'
+              ? 'bg-white/95 backdrop-blur-xl shadow-lg shadow-blue-500/5 border-b border-white/20'
+              : 'bg-white/80 backdrop-blur-lg border-b border-white/10'
               }`}>
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-20">

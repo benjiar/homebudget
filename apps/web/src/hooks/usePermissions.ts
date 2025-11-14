@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  Permission, 
+import {
+  Permission,
   HouseholdRole,
   hasPermission
 } from '@homebudget/types';
@@ -31,29 +31,25 @@ interface UsePermissionsResult {
 }
 
 export function usePermissions(): UsePermissionsResult {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [userHouseholds, setUserHouseholds] = useState<UserHousehold[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserMemberships = async () => {
-      if (!user || !session) {
+      if (!user) {
         setUserHouseholds([]);
         setLoading(false);
         return;
       }
 
       try {
-        const response = await fetch('/api/households', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        });
+        const response = await fetch('/api/households');
 
         if (response.ok) {
           const households = await response.json();
           const memberships: UserHousehold[] = [];
-          
+
           for (const household of households) {
             const userMembership = household.members?.find((m: any) => m.user?.id === user.id);
             if (userMembership && userMembership.is_active) {
@@ -64,7 +60,7 @@ export function usePermissions(): UsePermissionsResult {
               });
             }
           }
-          
+
           setUserHouseholds(memberships);
         }
       } catch (error) {
@@ -76,14 +72,14 @@ export function usePermissions(): UsePermissionsResult {
     };
 
     fetchUserMemberships();
-  }, [user, session]);
+  }, [user]);
 
   const checkPermission = (householdId: string, permission: Permission): boolean => {
     if (!user) return false;
-    
+
     const membership = userHouseholds.find(m => m.household_id === householdId && m.is_active);
     if (!membership) return false;
-    
+
     return hasPermission(membership.role, permission);
   };
 
@@ -115,20 +111,20 @@ export function usePermissions(): UsePermissionsResult {
     isOwner: checkOwner,
     isAdmin: checkAdmin,
     loading,
-    
+
     // Convenience methods for common checks
     canManageHousehold: (householdId: string) => checkOwner(householdId),
     canManageMembers: (householdId: string) => checkAdmin(householdId),
-    
+
     // Receipt permissions
     canCreateReceipts: (householdId: string) => checkPermission(householdId, Permission.CREATE_RECEIPTS),
     canEditReceipts: (householdId: string) => checkPermission(householdId, Permission.UPDATE_RECEIPTS),
     canDeleteReceipts: (householdId: string) => checkPermission(householdId, Permission.DELETE_RECEIPTS),
-    
+
     // Category permissions
     canManageCategories: (householdId: string) => checkPermission(householdId, Permission.UPDATE_CATEGORIES),
     canSetBudgets: (householdId: string) => checkPermission(householdId, Permission.SET_BUDGETS),
-    
+
     // Reporting permissions
     canViewReports: (householdId: string) => checkPermission(householdId, Permission.VIEW_REPORTS),
     canExportData: (householdId: string) => checkPermission(householdId, Permission.EXPORT_DATA),

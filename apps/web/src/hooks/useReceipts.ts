@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useApiClient } from './useApiClient';
 import { Receipt, CreateReceiptRequest, UpdateReceiptRequest } from '@homebudget/types';
 
@@ -28,6 +28,10 @@ interface UseReceiptsResult {
     clearMessage: () => void;
 }
 
+// Module-level cache to prevent duplicate API calls
+let cachedReceipts: Map<string, { receipts: Receipt[]; totalPages: number }> = new Map();
+let fetchPromises: Map<string, Promise<any>> = new Map();
+
 export function useReceipts(): UseReceiptsResult {
     const client = useApiClient();
     const [receipts, setReceipts] = useState<Receipt[]>([]);
@@ -37,6 +41,7 @@ export function useReceipts(): UseReceiptsResult {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [filters, setFilters] = useState<ReceiptFilters>({});
+    const hasFetchedRef = useRef(false);
 
     const clearMessage = () => setMessage(null);
 
@@ -46,19 +51,51 @@ export function useReceipts(): UseReceiptsResult {
     };
 
     const loadReceipts = async () => {
+        const searchParams = new URLSearchParams({
+            page: currentPage.toString(),
+            limit: '20',
+            ...Object.fromEntries(
+                Object.entries(filters).filter(([_, value]) => value !== undefined && value !== ''),
+            ),
+        });
+        const cacheKey = searchParams.toString();
+
+        // Check cache first
+        if (cachedReceipts.has(cacheKey) && hasFetchedRef.current) {
+            const cached = cachedReceipts.get(cacheKey)!;
+            setReceipts(cached.receipts);
+            setTotalPages(cached.totalPages);
+            setIsLoading(false);
+            return;
+        }
+
+        // If already fetching this query, reuse the promise
+        if (fetchPromises.has(cacheKey)) {
+            try {
+                const data = await fetchPromises.get(cacheKey)!;
+                setReceipts(data.receipts);
+                setTotalPages(data.totalPages);
+                setIsLoading(false);
+                return;
+            } catch (error) {
+                showMessage('error', error instanceof Error ? error.message : 'Failed to load receipts');
+                setIsLoading(false);
+                return;
+            }
+        }
+
         setIsLoading(true);
         try {
-            const searchParams = new URLSearchParams({
-                page: currentPage.toString(),
-                limit: '20',
-                ...Object.fromEntries(
-                    Object.entries(filters).filter(([_, value]) => value !== undefined && value !== ''),
-                ),
-            });
-
-            const data = await client.get<{ receipts: Receipt[]; total: number; page: number; totalPages: number }>(
+            const fetchPromise = client.get<{ receipts: Receipt[]; total: number; page: number; totalPages: number }>(
                 `/receipts?${searchParams}`
             );
+            fetchPromises.set(cacheKey, fetchPromise);
+
+            const data = await fetchPromise;
+
+            // Update cache
+            cachedReceipts.set(cacheKey, { receipts: data.receipts, totalPages: data.totalPages });
+            hasFetchedRef.current = true;
 
             setReceipts(data.receipts);
             setTotalPages(data.totalPages);
@@ -66,6 +103,7 @@ export function useReceipts(): UseReceiptsResult {
             showMessage('error', error instanceof Error ? error.message : 'Failed to load receipts');
         } finally {
             setIsLoading(false);
+            fetchPromises.delete(cacheKey);
         }
     };
 
@@ -77,7 +115,7 @@ export function useReceipts(): UseReceiptsResult {
                 const formData = new FormData();
                 formData.append('photo', photo);
                 Object.entries(data).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null) {
+                    if (value !== undefined && value !== null && value !== '') {
                         formData.append(key, value.toString());
                     }
                 });
@@ -87,6 +125,9 @@ export function useReceipts(): UseReceiptsResult {
             }
 
             showMessage('success', 'Receipt created successfully!');
+            // Clear cache to force refresh
+            cachedReceipts.clear();
+            hasFetchedRef.current = false;
             await loadReceipts();
             return newReceipt;
         } catch (error) {
@@ -104,18 +145,17 @@ export function useReceipts(): UseReceiptsResult {
             let updatedReceipt: Receipt;
             if (photo) {
                 // For file uploads with PATCH, we need to construct FormData and use fetch directly
+                // With SSR, cookies are automatically sent
                 const formData = new FormData();
                 formData.append('photo', photo);
                 Object.entries(data).forEach(([key, value]) => {
-                    if (value !== undefined && value !== null) {
+                    if (value !== undefined && value !== null && value !== '') {
                         formData.append(key, value.toString());
                     }
                 });
 
-                const token = client['defaultConfig'].token;
                 const householdIds = client['defaultConfig'].householdIds || [];
                 const headers: HeadersInit = {};
-                if (token) headers['Authorization'] = `Bearer ${token}`;
                 if (householdIds.length > 0) headers['x-household-ids'] = householdIds.join(',');
 
                 const response = await fetch(`${client['baseUrl']}/receipts/${id}`, {
@@ -135,6 +175,9 @@ export function useReceipts(): UseReceiptsResult {
             }
 
             showMessage('success', 'Receipt updated successfully!');
+            // Clear cache to force refresh
+            cachedReceipts.clear();
+            hasFetchedRef.current = false;
             await loadReceipts();
             return updatedReceipt;
         } catch (error) {
@@ -154,6 +197,9 @@ export function useReceipts(): UseReceiptsResult {
         try {
             await client.delete(`/receipts/${id}`);
             showMessage('success', 'Receipt deleted successfully!');
+            // Clear cache to force refresh
+            cachedReceipts.clear();
+            hasFetchedRef.current = false;
             await loadReceipts();
         } catch (error) {
             showMessage('error', error instanceof Error ? error.message : 'Failed to delete receipt');

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useHousehold } from '../contexts/HouseholdContext';
 import { useApiClient } from '../hooks/useApiClient';
 import { LoadingPage } from '@homebudget/ui';
 import { Layout } from '../components/Layout';
@@ -25,19 +26,27 @@ interface BudgetOverview {
 
 export default function BudgetPage() {
   const { user, loading } = useAuth();
+  const { isLoading: isLoadingHouseholds, households } = useHousehold();
   const client = useApiClient();
-  
+
   const [budgetOverview, setBudgetOverview] = useState<BudgetOverview | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const previousMonthRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      loadBudgetOverview();
+    // Wait for auth and households to finish loading
+    // Only load if month/year changed or first load
+    const currentMonthKey = `${selectedYear}-${selectedMonth}`;
+    if (user && !loading && !isLoadingHouseholds && households.length > 0) {
+      if (previousMonthRef.current !== currentMonthKey) {
+        previousMonthRef.current = currentMonthKey;
+        loadBudgetOverview();
+      }
     }
-  }, [user, selectedMonth, selectedYear]);
+  }, [user, loading, isLoadingHouseholds, households.length, selectedMonth, selectedYear]);
 
   const loadBudgetOverview = async () => {
     setIsLoading(true);
@@ -47,9 +56,9 @@ export default function BudgetPage() {
       );
       setBudgetOverview(data);
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to load budget overview' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to load budget overview'
       });
     } finally {
       setIsLoading(false);
@@ -72,7 +81,7 @@ export default function BudgetPage() {
 
   const getProgressBarWidth = (percentage: number) => Math.min(100, percentage);
 
-  const getTextColor = (percentage: number) => 
+  const getTextColor = (percentage: number) =>
     percentage <= 100 ? 'text-slate-900' : 'text-red-600 font-bold';
 
   const months = [
@@ -159,14 +168,13 @@ export default function BudgetPage() {
                     </div>
                     <div>
                       <div className="text-sm text-slate-600 mb-1">Remaining</div>
-                      <div className={`text-2xl font-bold ${
-                        budgetOverview.summary.total_remaining >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <div className={`text-2xl font-bold ${budgetOverview.summary.total_remaining >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {formatCurrency(budgetOverview.summary.total_remaining)}
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-6">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-slate-700">Overall Progress</span>
@@ -175,7 +183,7 @@ export default function BudgetPage() {
                       </span>
                     </div>
                     <div className={`w-full rounded-full h-3 ${getProgressBarBgColor(budgetOverview.summary.overall_percentage)}`}>
-                      <div 
+                      <div
                         className={`h-3 rounded-full transition-all duration-300 ${getProgressBarColor(budgetOverview.summary.overall_percentage)}`}
                         style={{ width: `${getProgressBarWidth(budgetOverview.summary.overall_percentage)}%` }}
                       />
@@ -189,7 +197,7 @@ export default function BudgetPage() {
                     <div key={item.category.id} className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
-                          <div 
+                          <div
                             className="w-12 h-12 rounded-xl flex items-center justify-center"
                             style={{ backgroundColor: item.category.color }}
                           >
@@ -212,7 +220,7 @@ export default function BudgetPage() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm text-slate-600">Progress</span>
@@ -221,7 +229,7 @@ export default function BudgetPage() {
                           </span>
                         </div>
                         <div className={`w-full rounded-full h-2 ${getProgressBarBgColor(item.percentage)}`}>
-                          <div 
+                          <div
                             className={`h-2 rounded-full transition-all duration-300 ${getProgressBarColor(item.percentage)}`}
                             style={{ width: `${getProgressBarWidth(item.percentage)}%` }}
                           />

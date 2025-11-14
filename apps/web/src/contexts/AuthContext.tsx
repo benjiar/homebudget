@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import supabase from '@/lib/supabaseClient';
+import { createClient } from '@/lib/supabase/client';
 import { invalidateHouseholdsCache } from '@/lib/householdsCache';
 
 interface AuthResponse {
@@ -15,7 +15,6 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  getAccessToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,13 +23,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('Error getting session:', error);
           setSession(null);
@@ -54,34 +54,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         console.log('Auth state changed:', event);
-        
-        const previousUser = user;
-        const newUser = newSession?.user ?? null;
-        
+
         setSession(newSession);
-        setUser(newUser);
-        
-        // Only invalidate cache on specific events to prevent loops
+        setUser(newSession?.user ?? null);
+
+        // Handle cache invalidation
         if (event === 'SIGNED_OUT') {
-          // Clear cache completely on logout
           invalidateHouseholdsCache();
           console.log('🗑️ AUTH: Cache invalidated on sign out');
-        } else if (event === 'SIGNED_IN' && previousUser?.id !== newUser?.id) {
-          // Only invalidate on sign in if it's a different user
-          if (newUser) {
-            invalidateHouseholdsCache(newUser.id);
-            console.log('🗑️ AUTH: Cache invalidated on sign in for new user');
+        } else if (event === 'SIGNED_IN') {
+          if (newSession?.user) {
+            invalidateHouseholdsCache(newSession.user.id);
+            console.log('🗑️ AUTH: Cache invalidated on sign in');
           }
         }
-        // Remove TOKEN_REFRESHED invalidation to prevent loops
-        
-        // No longer loading after first auth state change
+
         setLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
-  }, []); // Remove user dependency to prevent loops
+  }, [supabase]);
 
   const signIn = async (email: string, password: string): Promise<AuthResponse> => {
     try {
@@ -145,10 +138,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const getAccessToken = (): string | null => {
-    return session?.access_token ?? null;
-  };
-
   const value = {
     user,
     session,
@@ -157,7 +146,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signInWithGoogle,
     signOut,
-    getAccessToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

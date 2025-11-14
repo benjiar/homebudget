@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useHousehold } from '../contexts/HouseholdContext';
 import { Button, LoadingPage } from '@homebudget/ui';
 import { Layout } from '../components/Layout';
 import { RequireHousehold } from '../components/HouseholdGuard';
@@ -9,7 +10,8 @@ import { formatCurrency } from '@homebudget/types';
 import { convertToCSV, downloadCSV, generateReportFilename } from '../utils/csvExport';
 
 export default function ReportsPage() {
-  const { user, loading, session } = useAuth();
+  const { user, loading } = useAuth();
+  const { isLoading: isLoadingHouseholds, households } = useHousehold();
   const {
     categories,
     receipts,
@@ -25,14 +27,16 @@ export default function ReportsPage() {
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
+  const hasLoadedDataRef = useRef(false);
 
   useEffect(() => {
-    // Only load data when auth session is available
-    if (!loading && session && user) {
+    // Wait for auth and households to finish loading
+    if (!loading && !isLoadingHouseholds && households.length > 0 && user && !hasLoadedDataRef.current) {
+      hasLoadedDataRef.current = true;
       loadCategories();
       loadReceipts(dateRange);
     }
-  }, [loading, session, user]);
+  }, [loading, isLoadingHouseholds, households.length, user]);
 
   useEffect(() => {
     if (receipts.length > 0 && categories.length > 0) {

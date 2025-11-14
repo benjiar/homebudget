@@ -3,6 +3,7 @@ import { HouseholdMember } from './household-member.entity';
 import { Receipt } from './receipt.entity';
 import { Category } from './category.entity';
 import { Invitation } from './invitation.entity';
+import { Budget } from './budget.entity';
 
 @Entity('households')
 export class Household {
@@ -39,4 +40,7 @@ export class Household {
 
   @OneToMany(() => Invitation, invitation => invitation.household)
   invitations: Invitation[];
+
+  @OneToMany(() => Budget, budget => budget.household)
+  budgets: Budget[];
 } 

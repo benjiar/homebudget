@@ -85,6 +85,64 @@ export interface Receipt extends BaseEntity {
   created_by?: User;
 }
 
+// Budget period enum
+export enum BudgetPeriod {
+  MONTHLY = 'monthly',
+  YEARLY = 'yearly',
+  CUSTOM = 'custom'
+}
+
+// Budget entity type
+export interface Budget extends BaseEntity {
+  name: string;
+  description?: string;
+  amount: number;
+  period: BudgetPeriod;
+  start_date: string; // ISO date string
+  end_date: string; // ISO date string
+  category_id?: string;
+  household_id: string;
+  is_active: boolean;
+  is_recurring: boolean;
+  metadata?: Record<string, any>;
+  
+  // Populated relationships (optional for API responses)
+  household?: Household;
+  category?: Category;
+  
+  // Computed fields (for budget tracking)
+  current_spending?: number;
+  remaining?: number;
+  percentage_used?: number;
+  days_remaining?: number;
+  average_daily_spending?: number;
+  projected_spending?: number;
+}
+
+// Budget overview and analytics types
+export interface BudgetOverviewItem {
+  budget: Budget;
+  current_spending: number;
+  remaining: number;
+  percentage_used: number;
+  is_over_budget: boolean;
+  days_remaining: number;
+  days_elapsed: number;
+  average_daily_spending: number;
+  projected_spending: number;
+  on_track: boolean;
+}
+
+export interface BudgetSummary {
+  total_budgets: number;
+  total_budget_amount: number;
+  total_spent: number;
+  total_remaining: number;
+  overall_percentage: number;
+  over_budget_count: number;
+  budgets: BudgetOverviewItem[];
+}
+
 // Summary and analytics types
 export interface ReceiptSummary {
   total_receipts: number;

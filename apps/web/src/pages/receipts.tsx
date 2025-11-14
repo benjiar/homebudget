@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useHousehold } from '../contexts/HouseholdContext';
 import { Button, LoadingPage, Modal } from '@homebudget/ui';
@@ -12,8 +12,8 @@ import { useCategories } from '../hooks/useCategories';
 import { Receipt, CreateReceiptRequest, CreateCategoryRequest, Category } from '@homebudget/types';
 
 export default function ReceiptsPage() {
-  const { user, loading, session } = useAuth();
-  const { selectedHouseholds } = useHousehold();
+  const { user, loading } = useAuth();
+  const { selectedHouseholds, isLoading: isLoadingHouseholds, households } = useHousehold();
   const {
     receipts,
     isLoading,
@@ -37,21 +37,26 @@ export default function ReceiptsPage() {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null);
+  const previousPageRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Only load data when auth session is available
-    if (!loading && session) {
-      loadReceipts();
-      loadCategories();
+    // Wait for auth and households to finish loading before fetching data
+    // Only load if page changed or first load
+    if (!loading && !isLoadingHouseholds && households.length > 0) {
+      if (previousPageRef.current !== currentPage) {
+        previousPageRef.current = currentPage;
+        loadReceipts();
+        loadCategories();
+      }
     }
-  }, [currentPage, loading, session]);
+  }, [currentPage, loading, isLoadingHouseholds, households.length]);
 
-  const handleSubmit = async (data: CreateReceiptRequest): Promise<void> => {
+  const handleSubmit = async (data: CreateReceiptRequest, photo?: File): Promise<void> => {
     if (editingReceipt) {
-      await updateReceipt(editingReceipt.id, data);
+      await updateReceipt(editingReceipt.id, data, photo);
       setEditingReceipt(null);
     } else {
-      await createReceipt(data);
+      await createReceipt(data, photo);
     }
     setShowAddForm(false);
   };
@@ -136,25 +141,23 @@ export default function ReceiptsPage() {
             )}
 
             {/* Add/Edit Receipt Modal */}
-            {showAddForm && primaryHouseholdId && (
-              <Modal
-                isOpen={showAddForm}
-                onClose={resetForm}
-                title={editingReceipt ? 'Edit Receipt' : 'Add New Receipt'}
-                size="lg"
-              >
-                <ReceiptForm
-                  households={[]} // No longer needed with header pattern
-                  categories={categories}
-                  isLoadingCategories={isLoadingCategories}
-                  onSubmit={handleSubmit}
-                  onCancel={resetForm}
-                  isLoading={isSubmitting}
-                  initialHouseholdId={primaryHouseholdId}
-                  onCreateCategory={handleCreateCategory}
-                />
-              </Modal>
-            )}
+            <Modal
+              isOpen={showAddForm}
+              onClose={resetForm}
+              title={editingReceipt ? 'Edit Receipt' : 'Add New Receipt'}
+              size="lg"
+            >
+              <ReceiptForm
+                households={households}
+                categories={categories}
+                isLoadingCategories={isLoadingCategories}
+                onSubmit={handleSubmit}
+                onCancel={resetForm}
+                isLoading={isSubmitting}
+                initialHouseholdId={primaryHouseholdId}
+                onCreateCategory={handleCreateCategory}
+              />
+            </Modal>
           </div>
         </div>
       </Layout>

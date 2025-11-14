@@ -3,6 +3,16 @@ import { Household } from './household.entity';
 import { Category } from './category.entity';
 import { User } from './user.entity';
 
+// Transformer to ensure decimal values are returned as numbers
+const DecimalTransformer = {
+  to(value: number): number {
+    return value;
+  },
+  from(value: string): number {
+    return parseFloat(value);
+  }
+};
+
 @Entity('receipts')
 export class Receipt {
   @PrimaryGeneratedColumn('uuid')
@@ -11,7 +21,12 @@ export class Receipt {
   @Column({ type: 'varchar', length: 255 })
   title: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: DecimalTransformer
+  })
   amount: number;
 
   @Column({ type: 'date' })

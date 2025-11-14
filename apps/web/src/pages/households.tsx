@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
-import { Button, LoadingPage, LoadingCard, LoadingSkeleton } from '@homebudget/ui';
+import { Button, LoadingPage, LoadingCard } from '@homebudget/ui';
 import { Layout } from '@/components/Layout';
-import { invalidateHouseholdsCache, householdsCache } from '@/lib/householdsCache';
-import { Household, CreateHouseholdRequest, Currency, HouseholdRole, validateCurrency } from '@homebudget/types';
+import { useHouseholdsWithCache } from '@/hooks/useHouseholdsWithCache';
+import { Currency, HouseholdRole, validateCurrency } from '@homebudget/types';
 
 interface CreateHouseholdFormData {
   name: string;
@@ -13,10 +13,9 @@ interface CreateHouseholdFormData {
 }
 
 export default function HouseholdsPage() {
-  const { user, getAccessToken, loading } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const [households, setHouseholds] = useState<Household[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { households, isLoading, createHousehold, leaveHousehold: leaveHouseholdFromHook } = useHouseholdsWithCache();
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -35,37 +34,6 @@ export default function HouseholdsPage() {
     }
   }, [user, loading, router]);
 
-  // Load households
-  useEffect(() => {
-    if (user) {
-      loadHouseholds();
-    }
-  }, [user]);
-
-  const loadHouseholds = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        throw new Error('No access token available');
-      }
-
-      // Use the new households cache system
-      const cachedHouseholds = await householdsCache.get(user.id, accessToken);
-      setHouseholds(cachedHouseholds);
-      console.log(`🏠 HOUSEHOLDS PAGE: Loaded ${cachedHouseholds.length} households`);
-    } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to load households' 
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
@@ -74,51 +42,23 @@ export default function HouseholdsPage() {
     // Validate currency
     const currencyValidation = validateCurrency(createForm.currency);
     if (!currencyValidation.isValid) {
-      setMessage({ 
-        type: 'error', 
-        text: currencyValidation.errors[0]?.message || 'Invalid currency selected' 
+      setMessage({
+        type: 'error',
+        text: currencyValidation.errors[0]?.message || 'Invalid currency selected'
       });
       setIsCreating(false);
       return;
     }
 
     try {
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        throw new Error('No access token available');
-      }
-
-      const response = await fetch('/api/households', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(createForm),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create household');
-      }
-
-      const newHousehold = await response.json();
-      
-      // Invalidate cache and refresh households
-      if (user) {
-        invalidateHouseholdsCache(user.id);
-        const refreshedHouseholds = await householdsCache.get(user.id, accessToken);
-        setHouseholds(refreshedHouseholds);
-      }
-      
+      await createHousehold(createForm);
       setShowCreateForm(false);
       setCreateForm({ name: '', description: '', currency: Currency.ILS });
       setMessage({ type: 'success', text: 'Household created successfully!' });
     } catch (error) {
-      setShowCreateForm(false);
-      setCreateForm({ name: '', description: '', currency: Currency.ILS });
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to create household' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to create household'
       });
     } finally {
       setIsCreating(false);
@@ -131,44 +71,22 @@ export default function HouseholdsPage() {
     }
 
     try {
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        throw new Error('No access token available');
-      }
-
-      const response = await fetch(`/api/households/${householdId}/leave`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to leave household');
-      }
-
-      // Invalidate cache and refresh households
-      if (user) {
-        invalidateHouseholdsCache(user.id);
-        const refreshedHouseholds = await householdsCache.get(user.id, accessToken);
-        setHouseholds(refreshedHouseholds);
-      }
-      
+      await leaveHouseholdFromHook(householdId);
       setMessage({ type: 'success', text: 'Left household successfully!' });
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to leave household' 
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to leave household'
       });
     }
   };
 
-  const getUserRole = (household: Household): HouseholdRole | null => {
-    const membership = household.members?.find(m => m.user_id === user?.id);
+  const getUserRole = (household: any): string | null => {
+    const membership = household.members?.find((m: any) => m.user_id === user?.id);
     return membership?.role || null;
   };
 
-  const getRoleColor = (role: HouseholdRole): string => {
+  const getRoleColor = (role: string | null): string => {
     switch (role) {
       case HouseholdRole.OWNER:
         return 'bg-violet-100 text-violet-800';
@@ -185,9 +103,9 @@ export default function HouseholdsPage() {
 
   if (loading) {
     return (
-      <LoadingPage 
-        title="Loading Households" 
-        subtitle="Please wait while we load your households..." 
+      <LoadingPage
+        title="Loading Households"
+        subtitle="Please wait while we load your households..."
       />
     );
   }
@@ -217,11 +135,10 @@ export default function HouseholdsPage() {
 
         {/* Message */}
         {message && (
-          <div className={`mb-6 p-4 rounded-xl border ${
-            message.type === 'success' 
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
-              : 'bg-red-50 text-red-800 border-red-200'
-          }`}>
+          <div className={`mb-6 p-4 rounded-xl border ${message.type === 'success'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : 'bg-red-50 text-red-800 border-red-200'
+            }`}>
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 {message.type === 'success' ? (
@@ -245,7 +162,7 @@ export default function HouseholdsPage() {
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200/60">
               <div className="p-6">
                 <h2 className="text-xl font-semibold text-slate-900 mb-6">Create New Household</h2>
-                
+
                 <form onSubmit={handleCreateSubmit} className="space-y-6">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">

@@ -2,6 +2,16 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { Household } from './household.entity';
 import { Receipt } from './receipt.entity';
 
+// Transformer to ensure decimal values are returned as numbers
+const DecimalTransformer = {
+  to(value: number | null): number | null {
+    return value;
+  },
+  from(value: string | null): number | null {
+    return value ? parseFloat(value) : null;
+  }
+};
+
 @Entity('categories')
 export class Category {
   @PrimaryGeneratedColumn('uuid')
@@ -19,7 +29,13 @@ export class Category {
   @Column({ type: 'varchar', length: 50, nullable: true })
   icon: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: DecimalTransformer
+  })
   monthly_budget: number;
 
   @Column({ type: 'boolean', default: true })

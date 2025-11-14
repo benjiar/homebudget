@@ -1,7 +1,8 @@
-export { User } from './user.entity';
-export { Household } from './household.entity';
-export { HouseholdMember } from './household-member.entity';
-export { Category } from './category.entity';
-export { Receipt } from './receipt.entity';
-export { Invitation } from './invitation.entity';
-export { HouseholdRole } from './enums'; 
+export * from './user.entity';
+export * from './household.entity';
+export * from './household-member.entity';
+export * from './category.entity';
+export * from './receipt.entity';
+export * from './invitation.entity';
+export * from './budget.entity';
+export * from './enums'; 

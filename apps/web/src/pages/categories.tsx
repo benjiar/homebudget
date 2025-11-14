@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useHousehold } from '../contexts/HouseholdContext';
 import { Button, LoadingPage, Modal } from '@homebudget/ui';
@@ -12,7 +12,7 @@ import { Category, CreateCategoryRequest, UpdateCategoryRequest } from '@homebud
 
 export default function CategoriesPage() {
   const { user, loading } = useAuth();
-  const { selectedHouseholds } = useHousehold();
+  const { selectedHouseholds, isLoading: isLoadingHouseholds, households } = useHousehold();
   const {
     categories,
     isLoading,
@@ -26,10 +26,15 @@ export default function CategoriesPage() {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const hasLoadedDataRef = useRef(false);
 
   useEffect(() => {
-    loadCategories();
-  }, []);
+    // Wait for auth and households to finish loading before fetching data
+    if (!loading && !isLoadingHouseholds && households.length > 0 && !hasLoadedDataRef.current) {
+      hasLoadedDataRef.current = true;
+      loadCategories();
+    }
+  }, [loading, isLoadingHouseholds, households.length]);
 
   const handleSubmit = async (data: CreateCategoryRequest | UpdateCategoryRequest): Promise<Category> => {
     if (editingCategory) {

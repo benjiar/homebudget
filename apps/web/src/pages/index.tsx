@@ -1,12 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import { useApiClient } from '../hooks/useApiClient';
 import { LoadingPage } from '@homebudget/ui';
 import { Layout } from '../components/Layout';
 import { AllowNoHousehold } from '../components/HouseholdGuard';
-import { useHouseholdGuard } from '../hooks/useHouseholdGuard';
+import { useHousehold } from '../contexts/HouseholdContext';
 import WelcomeModal from '../components/WelcomeModal';
+import { DateRangeSelector, DateRange } from '../components/DateRangeSelector';
 import { Receipt, formatCurrency, formatDisplayDate } from '@homebudget/types';
 import Link from 'next/link';
 
@@ -26,16 +27,31 @@ interface BudgetOverview {
   };
 }
 
+// Helper function to get date range for "last month"
+const getDefaultDateRange = (): DateRange => {
+  const today = new Date();
+  const startDate = new Date(today);
+  startDate.setMonth(today.getMonth() - 1);
+
+  return {
+    startDate: startDate.toISOString().split('T')[0],
+    endDate: today.toISOString().split('T')[0],
+    preset: 'last_month',
+  };
+};
+
 export default function HomePage() {
-  const { user, loading: authLoading, session } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const client = useApiClient();
-  const { households, isLoading: householdsLoading } = useHouseholdGuard();
+  const { households, isLoading: householdsLoading } = useHousehold();
 
-  const [recentReceipts, setRecentReceipts] = useState<Receipt[]>([]);
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [budgetOverview, setBudgetOverview] = useState<BudgetOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange());
+  const hasLoadedDataRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -44,8 +60,17 @@ export default function HomePage() {
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    // Only load data when auth session is available
-    if (!authLoading && session && user && households.length > 0 && !householdsLoading) {
+    // Don't load data if user is not authenticated
+    if (!user) {
+      setIsLoading(false);
+      hasLoadedDataRef.current = false;
+      return;
+    }
+
+    // With SSR pattern, session is managed by middleware
+    // Only load once when all conditions are met
+    if (!authLoading && user && households.length > 0 && !householdsLoading && !hasLoadedDataRef.current) {
+      hasLoadedDataRef.current = true;
       loadDashboardData();
 
       const isNewUser = !localStorage.getItem('welcomeShown');
@@ -54,20 +79,41 @@ export default function HomePage() {
         localStorage.setItem('welcomeShown', 'true');
       }
     }
-  }, [authLoading, session, user, households, householdsLoading]);
+  }, [authLoading, user, households.length, householdsLoading]);
+
+  // Reload data when date range changes
+  useEffect(() => {
+    if (!authLoading && user && households.length > 0 && !householdsLoading) {
+      loadDashboardData();
+    }
+  }, [dateRange]);
 
   const loadDashboardData = async () => {
+    // Don't load data if user is not authenticated
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
+      // Fetch receipts with date range filter
+      const receiptsUrl = `/receipts?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}&limit=1000`;
+
       const [receiptsData, budgetData] = await Promise.all([
-        client.get<{ receipts: Receipt[] }>('/receipts?limit=5'),
+        client.get<{ receipts: Receipt[] }>(receiptsUrl),
         client.get<BudgetOverview>('/categories/budget-overview').catch(() => null),
       ]);
 
-      setRecentReceipts(receiptsData.receipts);
+      setReceipts(receiptsData.receipts);
       setBudgetOverview(budgetData);
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      // Ignore 401 errors during logout
+      if (error instanceof Error && error.message.includes('401')) {
+        console.log('Dashboard data fetch cancelled - user logged out');
+      } else {
+        console.error('Failed to load dashboard data:', error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -83,8 +129,11 @@ export default function HomePage() {
 
   const stats: DashboardStats = {
     totalHouseholds: households.length,
-    totalReceipts: recentReceipts.length,
-    totalSpent: recentReceipts.reduce((sum, r) => sum + r.amount, 0),
+    totalReceipts: receipts.length,
+    totalSpent: receipts.reduce((sum: number, r: Receipt) => {
+      const amount = typeof r.amount === 'string' ? parseFloat(r.amount) : r.amount;
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0),
     budgetUtilization: budgetOverview?.summary.overall_percentage || 0,
   };
 
@@ -100,6 +149,17 @@ export default function HomePage() {
               <p className="mt-1 text-sm text-slate-600">
                 Here's an overview of your finances
               </p>
+            </div>
+
+            {/* Date Range Selector */}
+            <div className="mb-6">
+              <DateRangeSelector
+                value={dateRange}
+                onChange={(newRange) => {
+                  setDateRange(newRange);
+                  hasLoadedDataRef.current = false; // Force reload
+                }}
+              />
             </div>
 
             {/* Stats Grid */}
@@ -119,8 +179,8 @@ export default function HomePage() {
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600">Recent Receipts</p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">{recentReceipts.length}</p>
+                    <p className="text-sm text-slate-600">Total Receipts</p>
+                    <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalReceipts}</p>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                     <span className="text-2xl">📄</span>
@@ -168,9 +228,9 @@ export default function HomePage() {
 
               {isLoading ? (
                 <div className="text-center py-8 text-slate-600">Loading...</div>
-              ) : recentReceipts.length > 0 ? (
+              ) : receipts.length > 0 ? (
                 <div className="space-y-4">
-                  {recentReceipts.map((receipt) => (
+                  {receipts.slice(0, 5).map((receipt) => (
                     <div key={receipt.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50">
                       <div className="flex items-center space-x-4">
                         {receipt.category && (

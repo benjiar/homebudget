@@ -14,7 +14,7 @@ interface HouseholdGuardProps {
 export const HouseholdGuard: React.FC<HouseholdGuardProps> = ({
   children,
   requirement = HouseholdRequirement.REQUIRED,
-  redirectTo = '/households',
+  redirectTo = '/',
   fallback
 }) => {
   const router = useRouter();
@@ -46,9 +46,9 @@ export const HouseholdGuard: React.FC<HouseholdGuardProps> = ({
   // Show loading while checking authentication and households
   if (authLoading || isLoading) {
     return (
-      <LoadingPage 
-        title="Checking Access" 
-        subtitle="Please wait while we verify your household membership..." 
+      <LoadingPage
+        title="Checking Access"
+        subtitle="Please wait while we verify your household membership..."
       />
     );
   }
@@ -88,7 +88,7 @@ export const HouseholdGuard: React.FC<HouseholdGuardProps> = ({
         <p className="text-lg text-slate-600 mb-8">
           This page requires household membership to access.
         </p>
-        <button 
+        <button
           onClick={() => router.push('/households')}
           className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
@@ -117,7 +117,7 @@ export const withHouseholdGuard = <P extends object>(
   };
 
   WrappedComponent.displayName = `withHouseholdGuard(${Component.displayName || Component.name})`;
-  
+
   return WrappedComponent;
 };
 
