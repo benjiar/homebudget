@@ -4,10 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e011f42f-86c7-4082-9bc2-830d6e78ef21" name="Changes" comment="WIP V2">
+    <list default="true" id="e011f42f-86c7-4082-9bc2-830d6e78ef21" name="Changes" comment="Addin ENV">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/apps/backend/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/web/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/.env.example" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/contexts/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/contexts/AuthContext.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/api/receipts/[id]/photo.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/api/receipts/[id]/photo.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/api/users/households.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/api/users/households.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -246,7 +248,7 @@
       <workItem from="1762586348630" duration="262000" />
       <workItem from="1762586625549" duration="87000" />
       <workItem from="1762586721988" duration="2472000" />
-      <workItem from="1763108751404" duration="1130000" />
+      <workItem from="1763108751404" duration="2888000" />
     </task>
     <task id="LOCAL-00001" summary="WIP V2">
       <option name="closed" value="true" />
@@ -256,7 +258,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763108838604</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Addin ENV">
+      <option name="closed" value="true" />
+      <created>1763109896596</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1763109896596</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -275,7 +285,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="WIP V2" />
-    <option name="LAST_COMMIT_MESSAGE" value="WIP V2" />
+    <MESSAGE value="Addin ENV" />
+    <option name="LAST_COMMIT_MESSAGE" value="Addin ENV" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
