@@ -1,17 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "dist/src/main.js",
-      "use": "@vercel/nestjs"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "dist/src/main.js"
-    }
-  ],
+  "buildCommand": "cd ../.. && pnpm install --include-workspace-root && pnpm build --filter=@homebudget/backend",
+  "installCommand": "cd ../.. && pnpm install --include-workspace-root",
+  "framework": null,
   "env": {
     "NODE_ENV": "production"
   }
