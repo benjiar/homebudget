@@ -12,12 +12,12 @@ export interface CategoryFormProps {
 }
 
 const DEFAULT_COLORS = [
-  '#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', 
+  '#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336',
   '#FFEB3B', '#E91E63', '#607D8B', '#9E9E9E', '#795548'
 ];
 
 const DEFAULT_ICONS = [
-  'utensils', 'zap', 'home', 'car', 'heart', 'baby', 'play', 
+  'utensils', 'zap', 'home', 'car', 'heart', 'baby', 'play',
   'shopping-bag', 'more-horizontal', 'dollar-sign', 'book', 'music'
 ];
 
@@ -177,11 +177,10 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 type="button"
                 onClick={() => handleColorSelect(color)}
                 disabled={isLoading}
-                className={`w-8 h-8 rounded-full border-2 transition-all duration-200 ${
-                  formData.color === color
+                className={`w-8 h-8 rounded-full border-2 transition-all duration-200 ${formData.color === color
                     ? 'border-slate-900 scale-110 ring-2 ring-offset-2 ring-slate-300'
                     : 'border-slate-300 hover:border-slate-400'
-                }`}
+                  }`}
                 style={{ backgroundColor: color }}
                 aria-label={`Select color ${color}`}
               />
@@ -200,7 +199,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
           >
             {DEFAULT_ICONS.map((icon) => (
               <option key={icon} value={icon}>
-                {getCategoryIcon(icon)} {icon}
+                {getCategoryIcon(icon)}
               </option>
             ))}
           </FormField>

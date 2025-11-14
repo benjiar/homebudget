@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useHousehold } from '../../contexts/HouseholdContext';
 import { Button } from '@homebudget/ui';
+import { invalidateHouseholdsCache } from '../../lib/householdsCache';
 
 export default function InvitationPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { refetch } = useHousehold();
   const { invitationId } = router.query;
   const [isAccepting, setIsAccepting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +41,12 @@ export default function InvitationPage() {
       }
 
       setSuccess(true);
+
+      // Invalidate and refresh household cache so it's ready when redirecting
+      if (user) {
+        invalidateHouseholdsCache(user.id);
+        await refetch();
+      }
 
       // Redirect to dashboard after a short delay
       setTimeout(() => {

@@ -44,14 +44,13 @@ export default function HomePage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const client = useApiClient();
-  const { households, isLoading: householdsLoading } = useHousehold();
+  const { households, isLoading: householdsLoading, selectedHouseholdIds } = useHousehold();
 
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [budgetOverview, setBudgetOverview] = useState<BudgetOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange());
-  const hasLoadedDataRef = useRef(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -63,30 +62,25 @@ export default function HomePage() {
     // Don't load data if user is not authenticated
     if (!user) {
       setIsLoading(false);
-      hasLoadedDataRef.current = false;
       return;
     }
 
-    // With SSR pattern, session is managed by middleware
-    // Only load once when all conditions are met
-    if (!authLoading && user && households.length > 0 && !householdsLoading && !hasLoadedDataRef.current) {
-      hasLoadedDataRef.current = true;
-      loadDashboardData();
-
-      const isNewUser = !localStorage.getItem('welcomeShown');
-      if (isNewUser) {
+    // Show welcome modal if user has no households
+    if (!authLoading && !householdsLoading) {
+      if (households.length === 0) {
         setShowWelcome(true);
-        localStorage.setItem('welcomeShown', 'true');
+      } else {
+        setShowWelcome(false);
       }
     }
   }, [authLoading, user, households.length, householdsLoading]);
 
-  // Reload data when date range changes
+  // Reload data when date range or household selection changes
   useEffect(() => {
     if (!authLoading && user && households.length > 0 && !householdsLoading) {
       loadDashboardData();
     }
-  }, [dateRange]);
+  }, [dateRange, selectedHouseholdIds.join(',')]);
 
   const loadDashboardData = async () => {
     // Don't load data if user is not authenticated
@@ -157,7 +151,6 @@ export default function HomePage() {
                 value={dateRange}
                 onChange={(newRange) => {
                   setDateRange(newRange);
-                  hasLoadedDataRef.current = false; // Force reload
                 }}
               />
             </div>
@@ -287,7 +280,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        {showWelcome && <WelcomeModal isOpen={showWelcome} onClose={() => setShowWelcome(false)} />}
+        {showWelcome && (
+          <WelcomeModal 
+            isOpen={showWelcome} 
+            onClose={() => setShowWelcome(false)} 
+            hasNoHouseholds={households.length === 0}
+          />
+        )}
       </Layout>
     </AllowNoHousehold>
   );

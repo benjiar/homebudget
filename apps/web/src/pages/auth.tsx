@@ -22,7 +22,13 @@ export default function AuthPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (user && !loading) {
-      router.push('/');
+      // Check if there's a redirect parameter
+      const redirect = router.query.redirect as string;
+      if (redirect) {
+        router.push(redirect);
+      } else {
+        router.push('/');
+      }
     }
   }, [user, loading, router]);
 

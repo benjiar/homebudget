@@ -19,7 +19,7 @@ import { User, Household, HouseholdMember, Category, Receipt, Invitation, Budget
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
-    
+
     // Database configuration with async loading
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -40,10 +40,10 @@ import { User, Household, HouseholdMember, Category, Receipt, Invitation, Budget
       }),
       inject: [ConfigService],
     }),
-    
+
     // Supabase module
     SupabaseModule,
-    
+
     // Feature modules
     UsersModule,
     HouseholdsModule,
@@ -55,4 +55,4 @@ import { User, Household, HouseholdMember, Category, Receipt, Invitation, Budget
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

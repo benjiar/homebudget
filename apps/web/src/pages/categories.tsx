@@ -12,7 +12,7 @@ import { Category, CreateCategoryRequest, UpdateCategoryRequest } from '@homebud
 
 export default function CategoriesPage() {
   const { user, loading } = useAuth();
-  const { selectedHouseholds, isLoading: isLoadingHouseholds, households } = useHousehold();
+  const { selectedHouseholdIds, isLoading: isLoadingHouseholds, households } = useHousehold();
   const {
     categories,
     isLoading,
@@ -26,15 +26,14 @@ export default function CategoriesPage() {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const hasLoadedDataRef = useRef(false);
 
   useEffect(() => {
     // Wait for auth and households to finish loading before fetching data
-    if (!loading && !isLoadingHouseholds && households.length > 0 && !hasLoadedDataRef.current) {
-      hasLoadedDataRef.current = true;
+    // Reload when household selection changes
+    if (!loading && !isLoadingHouseholds && households.length > 0) {
       loadCategories();
     }
-  }, [loading, isLoadingHouseholds, households.length]);
+  }, [loading, isLoadingHouseholds, households.length, selectedHouseholdIds.join(',')]);
 
   const handleSubmit = async (data: CreateCategoryRequest | UpdateCategoryRequest): Promise<Category> => {
     if (editingCategory) {
@@ -60,7 +59,7 @@ export default function CategoriesPage() {
   };
 
   // Get the first selected household for creating new categories
-  const primaryHouseholdId = selectedHouseholds.length > 0 ? selectedHouseholds[0] : '';
+  const primaryHouseholdId = selectedHouseholdIds.length > 0 ? selectedHouseholdIds[0] : '';
 
   if (loading) {
     return <LoadingPage title="Loading Categories" subtitle="Please wait..." />;

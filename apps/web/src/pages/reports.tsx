@@ -11,7 +11,7 @@ import { convertToCSV, downloadCSV, generateReportFilename } from '../utils/csvE
 
 export default function ReportsPage() {
   const { user, loading } = useAuth();
-  const { isLoading: isLoadingHouseholds, households } = useHousehold();
+  const { isLoading: isLoadingHouseholds, households, selectedHouseholdIds } = useHousehold();
   const {
     categories,
     receipts,
@@ -27,16 +27,15 @@ export default function ReportsPage() {
     startDate: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
-  const hasLoadedDataRef = useRef(false);
 
   useEffect(() => {
     // Wait for auth and households to finish loading
-    if (!loading && !isLoadingHouseholds && households.length > 0 && user && !hasLoadedDataRef.current) {
-      hasLoadedDataRef.current = true;
+    // Reload when household selection changes
+    if (!loading && !isLoadingHouseholds && households.length > 0 && user) {
       loadCategories();
       loadReceipts(dateRange);
     }
-  }, [loading, isLoadingHouseholds, households.length, user]);
+  }, [loading, isLoadingHouseholds, households.length, user, selectedHouseholdIds.join(',')]);
 
   useEffect(() => {
     if (receipts.length > 0 && categories.length > 0) {

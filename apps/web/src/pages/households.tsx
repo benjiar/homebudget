@@ -51,10 +51,18 @@ export default function HouseholdsPage() {
     }
 
     try {
+      const wasFirstHousehold = households.length === 0;
       await createHousehold(createForm);
       setShowCreateForm(false);
       setCreateForm({ name: '', description: '', currency: Currency.ILS });
       setMessage({ type: 'success', text: 'Household created successfully!' });
+      
+      // If this was the user's first household, redirect to home page
+      if (wasFirstHousehold) {
+        setTimeout(() => {
+          router.push('/');
+        }, 1500);
+      }
     } catch (error) {
       setMessage({
         type: 'error',

@@ -13,7 +13,7 @@ export interface User extends BaseEntity {
   full_name?: string;
   avatar_url?: string;
   preferences?: Record<string, any>;
-  
+
   // Populated relationships (optional for API responses)
   household_memberships?: HouseholdMember[];
   receipts?: Receipt[];
@@ -25,7 +25,7 @@ export interface Household extends BaseEntity {
   description?: string;
   currency: Currency;
   settings?: Record<string, any>;
-  
+
   // Populated relationships (optional for API responses)
   members?: HouseholdMember[];
   categories?: Category[];
@@ -40,7 +40,7 @@ export interface HouseholdMember extends BaseEntity {
   is_active: boolean;
   invited_at?: string;
   joined_at?: string;
-  
+
   // Populated relationships (optional for API responses)
   user?: User;
   household?: Household;
@@ -56,11 +56,11 @@ export interface Category extends BaseEntity {
   is_active: boolean;
   is_system: boolean;
   household_id: string;
-  
+
   // Populated relationships (optional for API responses)
   household?: Household;
   receipts?: Receipt[];
-  
+
   // Computed fields (for budget overview)
   current_spending?: number;
   budget_remaining?: number;
@@ -78,7 +78,7 @@ export interface Receipt extends BaseEntity {
   household_id: string;
   category_id: string;
   created_by_id: string;
-  
+
   // Populated relationships (optional for API responses)
   household?: Household;
   category?: Category;
@@ -105,11 +105,11 @@ export interface Budget extends BaseEntity {
   is_active: boolean;
   is_recurring: boolean;
   metadata?: Record<string, any>;
-  
+
   // Populated relationships (optional for API responses)
   household?: Household;
   category?: Category;
-  
+
   // Computed fields (for budget tracking)
   current_spending?: number;
   remaining?: number;
@@ -192,7 +192,7 @@ export interface PendingInvitation {
   invited_by: string;
   invited_at: string;
   expires_at: string;
-  
+
   // Populated relationships
   household?: Household;
   invited_by_user?: User;

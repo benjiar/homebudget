@@ -5,9 +5,10 @@ import { Modal, Button } from '@homebudget/ui';
 interface WelcomeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  hasNoHouseholds?: boolean; // Indicates if this is a required action
 }
 
-export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
+export default function WelcomeModal({ isOpen, onClose, hasNoHouseholds = false }: WelcomeModalProps) {
   const router = useRouter();
   const [invitationId, setInvitationId] = useState('');
   const [showJoinForm, setShowJoinForm] = useState(false);
@@ -15,7 +16,10 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   const [error, setError] = useState<string | null>(null);
 
   const handleCreateHousehold = () => {
-    onClose();
+    // Don't close the modal if user has no households (they'll be redirected)
+    if (!hasNoHouseholds) {
+      onClose();
+    }
     router.push('/households');
   };
 
@@ -51,7 +55,10 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
 
       // Navigate to the invitation acceptance page
       router.push(`/invite/${extractedId}`);
-      onClose();
+      // Don't close the modal if user has no households (they'll be redirected)
+      if (!hasNoHouseholds) {
+        onClose();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join household');
       setIsJoining(false);
@@ -61,11 +68,11 @@ export default function WelcomeModal({ isOpen, onClose }: WelcomeModalProps) {
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={hasNoHouseholds ? () => {} : onClose} // Prevent closing if user has no households
       size="lg"
-      closeOnOverlayClick={false}
-      closeOnEscape={false}
-      showCloseButton={false}
+      closeOnOverlayClick={!hasNoHouseholds}
+      closeOnEscape={!hasNoHouseholds}
+      showCloseButton={!hasNoHouseholds}
     >
       <div className="p-8">
         {/* Header */}

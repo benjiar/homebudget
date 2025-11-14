@@ -60,8 +60,25 @@ export class ApiClient {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || `API Error: ${response.status}`);
+            let errorMessage = `API Error: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                // NestJS returns errors in format: { message: string | string[] }
+                if (errorData.message) {
+                    errorMessage = Array.isArray(errorData.message) 
+                        ? errorData.message.join(', ') 
+                        : errorData.message;
+                } else if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                }
+            } catch {
+                // If JSON parsing fails, try as text
+                const errorText = await response.text();
+                if (errorText) {
+                    errorMessage = errorText;
+                }
+            }
+            throw new Error(errorMessage);
         }
 
         return response.json();
@@ -131,8 +148,25 @@ export class ApiClient {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(errorText || `API Error: ${response.status}`);
+            let errorMessage = `API Error: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                // NestJS returns errors in format: { message: string | string[] }
+                if (errorData.message) {
+                    errorMessage = Array.isArray(errorData.message) 
+                        ? errorData.message.join(', ') 
+                        : errorData.message;
+                } else if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                }
+            } catch {
+                // If JSON parsing fails, try as text
+                const errorText = await response.text();
+                if (errorText) {
+                    errorMessage = errorText;
+                }
+            }
+            throw new Error(errorMessage);
         }
 
         return response.json();

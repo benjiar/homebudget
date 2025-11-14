@@ -5,6 +5,7 @@ import { Household } from '../entities/household.entity';
 import { HouseholdMember, HouseholdRole } from '../entities';
 import { User } from '../entities/user.entity';
 import { UsersService } from '../users/users.service';
+import { HouseholdCacheService } from './household-cache.service';
 
 export interface CreateHouseholdDto {
   name: string;
@@ -35,7 +36,8 @@ export class HouseholdsService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private usersService: UsersService,
-  ) {}
+    private householdCacheService: HouseholdCacheService,
+  ) { }
 
   async create(createHouseholdDto: CreateHouseholdDto, ownerId: string, userInfo?: any): Promise<Household> {
     // Ensure user exists in our database
@@ -56,6 +58,9 @@ export class HouseholdsService {
       joined_at: new Date(),
     });
     await this.householdMembersRepository.save(membership);
+
+    // Invalidate cache for the owner since they now have a new household
+    this.householdCacheService.invalidateUser(ownerId);
 
     return this.findOne(savedHousehold.id);
   }
@@ -80,6 +85,13 @@ export class HouseholdsService {
   }
 
   async findUserHouseholds(userId: string): Promise<Household[]> {
+    // Check cache first (lazy population pattern)
+    const cached = this.householdCacheService.get(userId);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss - fetch from database
     const households = await this.householdsRepository
       .createQueryBuilder('household')
       .innerJoin('household.members', 'member')
@@ -90,27 +102,36 @@ export class HouseholdsService {
       .leftJoinAndSelect('household.categories', 'categories')
       .getMany();
 
+    // Populate cache for next request
+    this.householdCacheService.set(userId, households);
+
     return households;
   }
 
   async update(id: string, updateHouseholdDto: UpdateHouseholdDto, userId: string): Promise<Household> {
     const household = await this.findOne(id);
-    
+
     // Check if user has permission to update household
     await this.checkUserPermission(id, userId, [HouseholdRole.OWNER, HouseholdRole.ADMIN]);
-    
+
     Object.assign(household, updateHouseholdDto);
     await this.householdsRepository.save(household);
-    
+
+    // Invalidate cache for all members since household data changed
+    this.householdCacheService.invalidateHousehold(household);
+
     return this.findOne(id);
   }
 
   async remove(id: string, userId: string): Promise<void> {
     const household = await this.findOne(id);
-    
+
     // Only owners can delete households
     await this.checkUserPermission(id, userId, [HouseholdRole.OWNER]);
-    
+
+    // Invalidate cache for all members before removing
+    this.householdCacheService.invalidateHousehold(household);
+
     await this.householdsRepository.remove(household);
   }
 
@@ -126,7 +147,7 @@ export class HouseholdsService {
 
     // Check if user is already a member
     const existingMembership = await this.householdMembersRepository.findOne({
-      where: { 
+      where: {
         user_id: addMemberDto.userId,
         household_id: householdId,
       },
@@ -140,7 +161,13 @@ export class HouseholdsService {
         existingMembership.is_active = true;
         existingMembership.role = addMemberDto.role || HouseholdRole.MEMBER;
         existingMembership.joined_at = new Date();
-        return await this.householdMembersRepository.save(existingMembership);
+
+        const savedMembership = await this.householdMembersRepository.save(existingMembership);
+
+        // Invalidate cache for the reactivated member
+        this.householdCacheService.invalidateUser(addMemberDto.userId);
+
+        return savedMembership;
       }
     }
 
@@ -153,7 +180,12 @@ export class HouseholdsService {
       joined_at: new Date(),
     });
 
-    return await this.householdMembersRepository.save(membership);
+    const savedMembership = await this.householdMembersRepository.save(membership);
+
+    // Invalidate cache for the new member
+    this.householdCacheService.invalidateUser(addMemberDto.userId);
+
+    return savedMembership;
   }
 
   async removeMember(householdId: string, userId: string, requestingUserId: string): Promise<void> {
@@ -161,7 +193,7 @@ export class HouseholdsService {
     await this.checkUserPermission(householdId, requestingUserId, [HouseholdRole.OWNER, HouseholdRole.ADMIN]);
 
     const membership = await this.householdMembersRepository.findOne({
-      where: { 
+      where: {
         user_id: userId,
         household_id: householdId,
         is_active: true,
@@ -178,19 +210,22 @@ export class HouseholdsService {
     }
 
     await this.householdMembersRepository.remove(membership);
+
+    // Invalidate cache for the removed member
+    this.householdCacheService.invalidateUser(userId);
   }
 
   async updateMemberRole(
-    householdId: string, 
-    userId: string, 
-    newRole: HouseholdRole, 
+    householdId: string,
+    userId: string,
+    newRole: HouseholdRole,
     requestingUserId: string
   ): Promise<HouseholdMember> {
     // Only owners can change roles
     await this.checkUserPermission(householdId, requestingUserId, [HouseholdRole.OWNER]);
 
     const membership = await this.householdMembersRepository.findOne({
-      where: { 
+      where: {
         user_id: userId,
         household_id: householdId,
         is_active: true,
@@ -202,16 +237,21 @@ export class HouseholdsService {
     }
 
     membership.role = newRole;
-    return await this.householdMembersRepository.save(membership);
+    const savedMembership = await this.householdMembersRepository.save(membership);
+
+    // Invalidate cache for the user whose role changed
+    this.householdCacheService.invalidateUser(userId);
+
+    return savedMembership;
   }
 
   private async checkUserPermission(
-    householdId: string, 
-    userId: string, 
+    householdId: string,
+    userId: string,
     allowedRoles: HouseholdRole[]
   ): Promise<void> {
     const membership = await this.householdMembersRepository.findOne({
-      where: { 
+      where: {
         user_id: userId,
         household_id: householdId,
         is_active: true,

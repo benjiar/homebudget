@@ -13,7 +13,7 @@ import { Receipt, CreateReceiptRequest, CreateCategoryRequest, Category } from '
 
 export default function ReceiptsPage() {
   const { user, loading } = useAuth();
-  const { selectedHouseholds, isLoading: isLoadingHouseholds, households } = useHousehold();
+  const { selectedHouseholdIds, isLoading: isLoadingHouseholds, households } = useHousehold();
   const {
     receipts,
     isLoading,
@@ -41,15 +41,19 @@ export default function ReceiptsPage() {
 
   useEffect(() => {
     // Wait for auth and households to finish loading before fetching data
-    // Only load if page changed or first load
+    // Reload when page changes or household selection changes
     if (!loading && !isLoadingHouseholds && households.length > 0) {
       if (previousPageRef.current !== currentPage) {
         previousPageRef.current = currentPage;
         loadReceipts();
         loadCategories();
+      } else {
+        // Reload when household selection changes (but page hasn't changed)
+        loadReceipts();
+        loadCategories();
       }
     }
-  }, [currentPage, loading, isLoadingHouseholds, households.length]);
+  }, [currentPage, loading, isLoadingHouseholds, households.length, selectedHouseholdIds.join(',')]);
 
   const handleSubmit = async (data: CreateReceiptRequest, photo?: File): Promise<void> => {
     if (editingReceipt) {
@@ -77,7 +81,7 @@ export default function ReceiptsPage() {
     setShowAddForm(false);
   };
 
-  const primaryHouseholdId = selectedHouseholds.length > 0 ? selectedHouseholds[0] : '';
+  const primaryHouseholdId = selectedHouseholdIds.length > 0 ? selectedHouseholdIds[0] : '';
 
   if (loading) {
     return <LoadingPage title="Loading Receipts" subtitle="Please wait..." />;

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Budget } from '../entities/budget.entity';
@@ -7,306 +7,349 @@ import { Category } from '../entities/category.entity';
 import { CreateBudgetDto, UpdateBudgetDto, BudgetFilterDto } from './dto/budget.dto';
 
 export interface BudgetOverviewItem {
-  budget: Budget;
-  current_spending: number;
-  remaining: number;
-  percentage_used: number;
-  is_over_budget: boolean;
-  days_remaining: number;
-  days_elapsed: number;
-  average_daily_spending: number;
-  projected_spending: number;
-  on_track: boolean;
+    budget: Budget;
+    current_spending: number;
+    remaining: number;
+    percentage_used: number;
+    is_over_budget: boolean;
+    days_remaining: number;
+    days_elapsed: number;
+    average_daily_spending: number;
+    projected_spending: number;
+    on_track: boolean;
 }
 
 export interface BudgetSummary {
-  total_budgets: number;
-  total_budget_amount: number;
-  total_spent: number;
-  total_remaining: number;
-  overall_percentage: number;
-  over_budget_count: number;
-  budgets: BudgetOverviewItem[];
+    total_budgets: number;
+    total_budget_amount: number;
+    total_spent: number;
+    total_remaining: number;
+    overall_percentage: number;
+    over_budget_count: number;
+    budgets: BudgetOverviewItem[];
 }
 
 @Injectable()
 export class BudgetsService {
-  constructor(
-    @InjectRepository(Budget)
-    private budgetsRepository: Repository<Budget>,
-    @InjectRepository(Receipt)
-    private receiptsRepository: Repository<Receipt>,
-    @InjectRepository(Category)
-    private categoriesRepository: Repository<Category>,
-  ) {}
+    private readonly logger = new Logger(BudgetsService.name);
 
-  async create(householdId: string, createBudgetDto: CreateBudgetDto): Promise<Budget> {
-    // Validate dates
-    const startDate = new Date(createBudgetDto.start_date);
-    const endDate = new Date(createBudgetDto.end_date);
+    constructor(
+        @InjectRepository(Budget)
+        private budgetsRepository: Repository<Budget>,
+        @InjectRepository(Receipt)
+        private receiptsRepository: Repository<Receipt>,
+        @InjectRepository(Category)
+        private categoriesRepository: Repository<Category>,
+    ) { }
 
-    if (endDate <= startDate) {
-      throw new BadRequestException('End date must be after start date');
-    }
+    async create(householdId: string, createBudgetDto: CreateBudgetDto): Promise<Budget> {
+        this.logger.log(`Creating budget for household ${householdId}`);
+        this.logger.debug(`Budget data: ${JSON.stringify(createBudgetDto)}`);
 
-    // Validate category exists if provided
-    if (createBudgetDto.category_id) {
-      const category = await this.categoriesRepository.findOne({
-        where: { id: createBudgetDto.category_id, household_id: householdId },
-      });
+        // Validate dates
+        const startDate = new Date(createBudgetDto.start_date);
+        const endDate = new Date(createBudgetDto.end_date);
 
-      if (!category) {
-        throw new NotFoundException('Category not found');
-      }
-    }
+        if (endDate <= startDate) {
+            this.logger.warn(`Invalid date range: start=${startDate}, end=${endDate}`);
+            throw new BadRequestException('End date must be after start date');
+        }
 
-    // Check for overlapping budgets
-    const overlapping = await this.findOverlappingBudgets(
-      householdId,
-      startDate,
-      endDate,
-      createBudgetDto.category_id,
-    );
+        // Validate category exists if provided
+        if (createBudgetDto.category_id) {
+            this.logger.debug(`Validating category: ${createBudgetDto.category_id}`);
+            const category = await this.categoriesRepository.findOne({
+                where: { id: createBudgetDto.category_id, household_id: householdId },
+            });
 
-    if (overlapping.length > 0) {
-      throw new BadRequestException(
-        'A budget already exists for this category in the specified date range',
-      );
-    }
+            if (!category) {
+                this.logger.warn(`Category not found: ${createBudgetDto.category_id}`);
+                throw new NotFoundException('Category not found');
+            }
+            this.logger.debug(`Category validated: ${category.name}`);
+        } else {
+            this.logger.debug('Creating budget without specific category (household-wide)');
+        }
 
-    const budget = this.budgetsRepository.create({
-      ...createBudgetDto,
-      household_id: householdId,
-    });
-
-    return this.budgetsRepository.save(budget);
-  }
-
-  async findAll(householdId: string, filters?: BudgetFilterDto): Promise<Budget[]> {
-    const query = this.budgetsRepository
-      .createQueryBuilder('budget')
-      .leftJoinAndSelect('budget.category', 'category')
-      .where('budget.household_id = :householdId', { householdId });
-
-    if (filters?.period) {
-      query.andWhere('budget.period = :period', { period: filters.period });
-    }
-
-    if (filters?.category_id) {
-      query.andWhere('budget.category_id = :categoryId', { categoryId: filters.category_id });
-    }
-
-    if (filters?.start_date) {
-      query.andWhere('budget.end_date >= :startDate', { startDate: filters.start_date });
-    }
-
-    if (filters?.end_date) {
-      query.andWhere('budget.start_date <= :endDate', { endDate: filters.end_date });
-    }
-
-    if (filters?.is_active !== undefined) {
-      query.andWhere('budget.is_active = :isActive', { isActive: filters.is_active });
-    } else if (!filters?.include_inactive) {
-      query.andWhere('budget.is_active = true');
-    }
-
-    query.orderBy('budget.start_date', 'DESC');
-
-    return query.getMany();
-  }
-
-  async findOne(id: string, householdId: string): Promise<Budget> {
-    const budget = await this.budgetsRepository.findOne({
-      where: { id, household_id: householdId },
-      relations: ['category'],
-    });
-
-    if (!budget) {
-      throw new NotFoundException('Budget not found');
-    }
-
-    return budget;
-  }
-
-  async update(id: string, householdId: string, updateBudgetDto: UpdateBudgetDto): Promise<Budget> {
-    const budget = await this.findOne(id, householdId);
-
-    // Validate dates if both are being updated
-    if (updateBudgetDto.start_date || updateBudgetDto.end_date) {
-      const startDate = new Date(updateBudgetDto.start_date || budget.start_date);
-      const endDate = new Date(updateBudgetDto.end_date || budget.end_date);
-
-      if (endDate <= startDate) {
-        throw new BadRequestException('End date must be after start date');
-      }
-    }
-
-    // Validate category if being updated
-    if (updateBudgetDto.category_id) {
-      const category = await this.categoriesRepository.findOne({
-        where: { id: updateBudgetDto.category_id, household_id: householdId },
-      });
-
-      if (!category) {
-        throw new NotFoundException('Category not found');
-      }
-    }
-
-    Object.assign(budget, updateBudgetDto);
-    return this.budgetsRepository.save(budget);
-  }
-
-  async remove(id: string, householdId: string): Promise<void> {
-    const budget = await this.findOne(id, householdId);
-    await this.budgetsRepository.remove(budget);
-  }
-
-  async getBudgetOverview(householdId: string, filters?: BudgetFilterDto): Promise<BudgetSummary> {
-    const budgets = await this.findAll(householdId, filters);
-    const today = new Date();
-
-    const budgetItems: BudgetOverviewItem[] = await Promise.all(
-      budgets.map(async (budget) => {
-        const spending = await this.calculateSpending(
-          householdId,
-          new Date(budget.start_date),
-          new Date(budget.end_date),
-          budget.category_id,
+        // Check for overlapping budgets
+        const overlapping = await this.findOverlappingBudgets(
+            householdId,
+            startDate,
+            endDate,
+            createBudgetDto.category_id,
         );
 
-        const startDate = new Date(budget.start_date);
-        const endDate = new Date(budget.end_date);
-        const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-        const daysElapsed = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
-        const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+        if (overlapping.length > 0) {
+            this.logger.warn(`Found ${overlapping.length} overlapping budgets`);
+            
+            // If deactivate_overlapping is true, deactivate the overlapping budgets
+            if (createBudgetDto.deactivate_overlapping) {
+                this.logger.log(`Deactivating ${overlapping.length} overlapping budget(s)`);
+                for (const budget of overlapping) {
+                    budget.is_active = false;
+                    await this.budgetsRepository.save(budget);
+                    this.logger.debug(`Deactivated budget: ${budget.name} (${budget.id})`);
+                }
+            } else {
+                // Otherwise, throw an error with details
+                const overlappingNames = overlapping.map(b => `"${b.name}" (${b.start_date} to ${b.end_date})`).join(', ');
+                throw new BadRequestException(
+                    `A budget already exists for this ${createBudgetDto.category_id ? 'category' : 'household'} in the specified date range. Overlapping budget(s): ${overlappingNames}. Please deactivate the existing budget(s) or choose a different date range. You can also set "deactivate_overlapping" to true to automatically deactivate overlapping budgets.`,
+                );
+            }
+        }
+
+        // Remove deactivate_overlapping from the DTO before creating the budget entity
+        const { deactivate_overlapping, ...budgetData } = createBudgetDto;
         
-        const remaining = budget.amount - spending;
-        const percentageUsed = (spending / budget.amount) * 100;
-        const averageDailySpending = daysElapsed > 0 ? spending / daysElapsed : 0;
-        const projectedSpending = averageDailySpending * totalDays;
-        const onTrack = projectedSpending <= budget.amount;
+        const budget = this.budgetsRepository.create({
+            ...budgetData,
+            household_id: householdId,
+        });
+
+        this.logger.debug(`Budget entity created, saving to database...`);
+
+        const savedBudget = await this.budgetsRepository.save(budget);
+        this.logger.log(`Budget created successfully with ID: ${savedBudget.id}`);
+        return savedBudget;
+    }
+
+    async findAll(householdIds: string[], filters?: BudgetFilterDto): Promise<Budget[]> {
+        const query = this.budgetsRepository
+            .createQueryBuilder('budget')
+            .leftJoinAndSelect('budget.category', 'category');
+        
+        // If householdIds is empty or not provided, this will be handled by the controller
+        // to get all user households. Here we handle the array.
+        if (householdIds && householdIds.length > 0) {
+            query.where('budget.household_id IN (:...householdIds)', { householdIds });
+        } else {
+            // This shouldn't happen if controller is correct, but handle it gracefully
+            this.logger.warn('findAll called with empty householdIds array');
+            return [];
+        }
+
+        if (filters?.period) {
+            query.andWhere('budget.period = :period', { period: filters.period });
+        }
+
+        if (filters?.category_id) {
+            query.andWhere('budget.category_id = :categoryId', { categoryId: filters.category_id });
+        }
+
+        if (filters?.start_date) {
+            query.andWhere('budget.end_date >= :startDate', { startDate: filters.start_date });
+        }
+
+        if (filters?.end_date) {
+            query.andWhere('budget.start_date <= :endDate', { endDate: filters.end_date });
+        }
+
+        if (filters?.is_active !== undefined) {
+            query.andWhere('budget.is_active = :isActive', { isActive: filters.is_active });
+        } else if (!filters?.include_inactive) {
+            query.andWhere('budget.is_active = true');
+        }
+
+        query.orderBy('budget.start_date', 'DESC');
+
+        return query.getMany();
+    }
+
+    async findOne(id: string, householdId: string): Promise<Budget> {
+        const budget = await this.budgetsRepository.findOne({
+            where: { id, household_id: householdId },
+            relations: ['category'],
+        });
+
+        if (!budget) {
+            throw new NotFoundException('Budget not found');
+        }
+
+        return budget;
+    }
+
+    async update(id: string, householdId: string, updateBudgetDto: UpdateBudgetDto): Promise<Budget> {
+        const budget = await this.findOne(id, householdId);
+
+        // Validate dates if both are being updated
+        if (updateBudgetDto.start_date || updateBudgetDto.end_date) {
+            const startDate = new Date(updateBudgetDto.start_date || budget.start_date);
+            const endDate = new Date(updateBudgetDto.end_date || budget.end_date);
+
+            if (endDate <= startDate) {
+                throw new BadRequestException('End date must be after start date');
+            }
+        }
+
+        // Validate category if being updated
+        if (updateBudgetDto.category_id) {
+            const category = await this.categoriesRepository.findOne({
+                where: { id: updateBudgetDto.category_id, household_id: householdId },
+            });
+
+            if (!category) {
+                throw new NotFoundException('Category not found');
+            }
+        }
+
+        Object.assign(budget, updateBudgetDto);
+        return this.budgetsRepository.save(budget);
+    }
+
+    async remove(id: string, householdId: string): Promise<void> {
+        const budget = await this.findOne(id, householdId);
+        await this.budgetsRepository.remove(budget);
+    }
+
+    async getBudgetOverview(householdIds: string[], filters?: BudgetFilterDto): Promise<BudgetSummary> {
+        this.logger.debug(`Getting budget overview for households ${JSON.stringify(householdIds)} with filters: ${JSON.stringify(filters)}`);
+        const budgets = await this.findAll(householdIds, filters);
+        this.logger.debug(`Found ${budgets.length} budgets for overview`);
+        const today = new Date();
+
+        const budgetItems: BudgetOverviewItem[] = await Promise.all(
+            budgets.map(async (budget) => {
+                const spending = await this.calculateSpending(
+                    budget.household_id,
+                    new Date(budget.start_date),
+                    new Date(budget.end_date),
+                    budget.category_id,
+                );
+
+                const startDate = new Date(budget.start_date);
+                const endDate = new Date(budget.end_date);
+                const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                const daysElapsed = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+                const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+
+                const remaining = budget.amount - spending;
+                const percentageUsed = (spending / budget.amount) * 100;
+                const averageDailySpending = daysElapsed > 0 ? spending / daysElapsed : 0;
+                const projectedSpending = averageDailySpending * totalDays;
+                const onTrack = projectedSpending <= budget.amount;
+
+                return {
+                    budget,
+                    current_spending: spending,
+                    remaining,
+                    percentage_used: percentageUsed,
+                    is_over_budget: spending > budget.amount,
+                    days_remaining: daysRemaining,
+                    days_elapsed: daysElapsed,
+                    average_daily_spending: averageDailySpending,
+                    projected_spending: projectedSpending,
+                    on_track: onTrack,
+                };
+            }),
+        );
+
+        const totalBudgetAmount = budgets.reduce((sum, b) => sum + Number(b.amount), 0);
+        const totalSpent = budgetItems.reduce((sum, item) => sum + item.current_spending, 0);
+        const totalRemaining = totalBudgetAmount - totalSpent;
+        const overBudgetCount = budgetItems.filter(item => item.is_over_budget).length;
 
         return {
-          budget,
-          current_spending: spending,
-          remaining,
-          percentage_used: percentageUsed,
-          is_over_budget: spending > budget.amount,
-          days_remaining: daysRemaining,
-          days_elapsed: daysElapsed,
-          average_daily_spending: averageDailySpending,
-          projected_spending: projectedSpending,
-          on_track: onTrack,
+            total_budgets: budgets.length,
+            total_budget_amount: totalBudgetAmount,
+            total_spent: totalSpent,
+            total_remaining: totalRemaining,
+            overall_percentage: totalBudgetAmount > 0 ? (totalSpent / totalBudgetAmount) * 100 : 0,
+            over_budget_count: overBudgetCount,
+            budgets: budgetItems,
         };
-      }),
-    );
+    }
 
-    const totalBudgetAmount = budgets.reduce((sum, b) => sum + Number(b.amount), 0);
-    const totalSpent = budgetItems.reduce((sum, item) => sum + item.current_spending, 0);
-    const totalRemaining = totalBudgetAmount - totalSpent;
-    const overBudgetCount = budgetItems.filter(item => item.is_over_budget).length;
-
-    return {
-      total_budgets: budgets.length,
-      total_budget_amount: totalBudgetAmount,
-      total_spent: totalSpent,
-      total_remaining: totalRemaining,
-      overall_percentage: totalBudgetAmount > 0 ? (totalSpent / totalBudgetAmount) * 100 : 0,
-      over_budget_count: overBudgetCount,
-      budgets: budgetItems,
-    };
-  }
-
-  async suggestBudgets(householdId: string): Promise<any[]> {
-    // Get all categories for the household
-    const categories = await this.categoriesRepository.find({
-      where: { household_id: householdId, is_active: true },
-    });
-
-    const suggestions = [];
-    const now = new Date();
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-
-    for (const category of categories) {
-      // Calculate average spending over last 3 months
-      const spending = await this.receiptsRepository
-        .createQueryBuilder('receipt')
-        .where('receipt.household_id = :householdId', { householdId })
-        .andWhere('receipt.category_id = :categoryId', { categoryId: category.id })
-        .andWhere('receipt.receipt_date >= :startDate', { startDate: threeMonthsAgo.toISOString().split('T')[0] })
-        .select('SUM(receipt.amount)', 'total')
-        .getRawOne();
-
-      const totalSpending = Number(spending?.total || 0);
-      
-      if (totalSpending > 0) {
-        const averageMonthly = totalSpending / 3;
-        const suggestedMonthly = Math.ceil(averageMonthly * 1.1); // Add 10% buffer
-        const suggestedYearly = suggestedMonthly * 12;
-
-        suggestions.push({
-          category,
-          historical_spending: {
-            last_3_months: totalSpending,
-            average_monthly: averageMonthly,
-          },
-          suggestions: {
-            monthly: suggestedMonthly,
-            yearly: suggestedYearly,
-          },
+    async suggestBudgets(householdId: string): Promise<any[]> {
+        // Get all categories for the household
+        const categories = await this.categoriesRepository.find({
+            where: { household_id: householdId, is_active: true },
         });
-      }
+
+        const suggestions = [];
+        const now = new Date();
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+
+        for (const category of categories) {
+            // Calculate average spending over last 3 months
+            const spending = await this.receiptsRepository
+                .createQueryBuilder('receipt')
+                .where('receipt.household_id = :householdId', { householdId })
+                .andWhere('receipt.category_id = :categoryId', { categoryId: category.id })
+                .andWhere('receipt.receipt_date >= :startDate', { startDate: threeMonthsAgo.toISOString().split('T')[0] })
+                .select('SUM(receipt.amount)', 'total')
+                .getRawOne();
+
+            const totalSpending = Number(spending?.total || 0);
+
+            if (totalSpending > 0) {
+                const averageMonthly = totalSpending / 3;
+                const suggestedMonthly = Math.ceil(averageMonthly * 1.1); // Add 10% buffer
+                const suggestedYearly = suggestedMonthly * 12;
+
+                suggestions.push({
+                    category,
+                    historical_spending: {
+                        last_3_months: totalSpending,
+                        average_monthly: averageMonthly,
+                    },
+                    suggestions: {
+                        monthly: suggestedMonthly,
+                        yearly: suggestedYearly,
+                    },
+                });
+            }
+        }
+
+        return suggestions.sort((a, b) => b.historical_spending.average_monthly - a.historical_spending.average_monthly);
     }
 
-    return suggestions.sort((a, b) => b.historical_spending.average_monthly - a.historical_spending.average_monthly);
-  }
+    private async calculateSpending(
+        householdId: string,
+        startDate: Date,
+        endDate: Date,
+        categoryId?: string,
+    ): Promise<number> {
+        const query = this.receiptsRepository
+            .createQueryBuilder('receipt')
+            .where('receipt.household_id = :householdId', { householdId })
+            .andWhere('receipt.receipt_date BETWEEN :startDate AND :endDate', {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+            });
 
-  private async calculateSpending(
-    householdId: string,
-    startDate: Date,
-    endDate: Date,
-    categoryId?: string,
-  ): Promise<number> {
-    const query = this.receiptsRepository
-      .createQueryBuilder('receipt')
-      .where('receipt.household_id = :householdId', { householdId })
-      .andWhere('receipt.receipt_date BETWEEN :startDate AND :endDate', {
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
-      });
+        if (categoryId) {
+            query.andWhere('receipt.category_id = :categoryId', { categoryId });
+        }
 
-    if (categoryId) {
-      query.andWhere('receipt.category_id = :categoryId', { categoryId });
+        const result = await query.select('SUM(receipt.amount)', 'total').getRawOne();
+        return Number(result?.total || 0);
     }
 
-    const result = await query.select('SUM(receipt.amount)', 'total').getRawOne();
-    return Number(result?.total || 0);
-  }
+    private async findOverlappingBudgets(
+        householdId: string,
+        startDate: Date,
+        endDate: Date,
+        categoryId?: string,
+    ): Promise<Budget[]> {
+        const query = this.budgetsRepository
+            .createQueryBuilder('budget')
+            .where('budget.household_id = :householdId', { householdId })
+            .andWhere('budget.is_active = true')
+            .andWhere(
+                '(budget.start_date BETWEEN :startDate AND :endDate OR budget.end_date BETWEEN :startDate AND :endDate OR (:startDate BETWEEN budget.start_date AND budget.end_date))',
+                {
+                    startDate: startDate.toISOString().split('T')[0],
+                    endDate: endDate.toISOString().split('T')[0],
+                },
+            );
 
-  private async findOverlappingBudgets(
-    householdId: string,
-    startDate: Date,
-    endDate: Date,
-    categoryId?: string,
-  ): Promise<Budget[]> {
-    const query = this.budgetsRepository
-      .createQueryBuilder('budget')
-      .where('budget.household_id = :householdId', { householdId })
-      .andWhere('budget.is_active = true')
-      .andWhere(
-        '(budget.start_date BETWEEN :startDate AND :endDate OR budget.end_date BETWEEN :startDate AND :endDate OR (:startDate BETWEEN budget.start_date AND budget.end_date))',
-        {
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0],
-        },
-      );
+        if (categoryId) {
+            query.andWhere('budget.category_id = :categoryId', { categoryId });
+        } else {
+            query.andWhere('budget.category_id IS NULL');
+        }
 
-    if (categoryId) {
-      query.andWhere('budget.category_id = :categoryId', { categoryId });
-    } else {
-      query.andWhere('budget.category_id IS NULL');
+        return query.getMany();
     }
-
-    return query.getMany();
-  }
 }

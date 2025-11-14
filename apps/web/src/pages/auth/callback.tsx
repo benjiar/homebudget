@@ -29,14 +29,30 @@ export default function AuthCallback() {
               if (authStateSubscription) {
                 authStateSubscription.unsubscribe();
               }
-              router.push('/');
+              
+              // Check if there's a stored redirect path
+              const storedRedirect = sessionStorage.getItem('auth_redirect');
+              if (storedRedirect) {
+                sessionStorage.removeItem('auth_redirect');
+                router.push(storedRedirect);
+              } else {
+                router.push('/');
+              }
             } else if (event === 'TOKEN_REFRESHED' && session) {
               // Token refreshed, user is signed in
               hasProcessed.current = true;
               if (authStateSubscription) {
                 authStateSubscription.unsubscribe();
               }
-              router.push('/');
+              
+              // Check if there's a stored redirect path
+              const storedRedirect = sessionStorage.getItem('auth_redirect');
+              if (storedRedirect) {
+                sessionStorage.removeItem('auth_redirect');
+                router.push(storedRedirect);
+              } else {
+                router.push('/');
+              }
             }
           }
         );

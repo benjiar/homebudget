@@ -1,12 +1,8 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useHousehold } from '@/contexts/HouseholdContext';
 
 interface HouseholdGuardOptions {
-  redirectTo?: string;
   allowGuests?: boolean; // Allow guests to view some pages
-  showNoHouseholdModal?: boolean;
 }
 
 interface UseHouseholdGuardReturn {
@@ -21,34 +17,19 @@ interface UseHouseholdGuardReturn {
 /**
  * Hook for household-based route protection
  * Uses HouseholdContext as single source of truth for household data
- * NO LONGER FETCHES DATA - just reads from context and handles redirects
+ * NO LONGER FETCHES DATA OR REDIRECTS - just reads from context and provides validation state
  */
 export const useHouseholdGuard = (options: HouseholdGuardOptions = {}): UseHouseholdGuardReturn => {
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const { households, isLoading: isLoadingHouseholds } = useHousehold();
-  const router = useRouter();
 
-  const {
-    redirectTo = '/households',
-    allowGuests = false,
-    showNoHouseholdModal = false
-  } = options;
+  const { allowGuests = false } = options;
 
   const isLoading = authLoading || isLoadingHouseholds;
   const hasChecked = !authLoading && !isLoadingHouseholds;
 
-  // Handle redirects - only when all conditions are met
-  useEffect(() => {
-    if (!user || !hasChecked || isLoading) {
-      return;
-    }
-
-    // Redirect when no households and not allowing guests
-    if (households.length === 0 && !allowGuests && !showNoHouseholdModal) {
-      console.log('🔄 GUARD: Redirecting to households page (no households found)');
-      router.push(redirectTo);
-    }
-  }, [hasChecked, user, households.length, allowGuests, showNoHouseholdModal, redirectTo, router, isLoading]);
+  // NO AUTOMATIC REDIRECTS - Let the component decide what to do
+  // The guard only provides the validation state, doesn't force navigation
 
   // Get current household from localStorage or first household
   const getCurrentHousehold = () => {
@@ -84,7 +65,6 @@ export enum HouseholdRequirement {
 export const useRouteHouseholdGuard = (requirement: HouseholdRequirement = HouseholdRequirement.REQUIRED) => {
   const guardData = useHouseholdGuard({
     allowGuests: requirement === HouseholdRequirement.GUEST_ALLOWED,
-    showNoHouseholdModal: requirement === HouseholdRequirement.OPTIONAL,
   });
 
   const shouldRedirect = requirement === HouseholdRequirement.REQUIRED &&

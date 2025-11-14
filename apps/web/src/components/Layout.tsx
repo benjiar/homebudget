@@ -92,9 +92,9 @@ export function Layout({ children, title = 'HomeBudget', showHeader = true }: La
   const navigation = [
     { name: 'Dashboard', href: '/', icon: '🏠', current: router.pathname === '/', requiresHousehold: false },
     { name: 'Receipts', href: '/receipts', icon: '📄', current: router.pathname === '/receipts', requiresHousehold: true },
-    { name: 'Budgets', href: '/budgets', icon: '�', current: router.pathname === '/budgets', requiresHousehold: true },
+    { name: 'Budgets', href: '/budgets', icon: '💰', current: router.pathname === '/budgets', requiresHousehold: true },
     { name: 'Categories', href: '/categories', icon: '🏷️', current: router.pathname === '/categories', requiresHousehold: true },
-    { name: 'Households', href: '/households', icon: '�️', current: router.pathname === '/households', requiresHousehold: false },
+    { name: 'Households', href: '/households', icon: '🏘️', current: router.pathname === '/households', requiresHousehold: false },
     { name: 'Reports', href: '/reports', icon: '📊', current: router.pathname === '/reports', requiresHousehold: true }
   ];
 

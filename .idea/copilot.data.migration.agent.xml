@@ -8,6 +8,7 @@
       <option value="4a06dc99-63de-441a-96df-1ef776483e41" />
       <option value="58a3c858-f98b-45eb-886f-92f923cc5e8e" />
       <option value="d73d6a15-75c8-4522-a918-48e9a2210ac4" />
+      <option value="f436358c-55dd-4319-b02c-aced81d49e00" />
     </option>
     <option name="pendingTurns">
       <map>
@@ -68,13 +69,7 @@
     <pendingWorkingSetItems>
       <entry key="27cbf40d-07c0-42a5-a43f-99c0c227c75b" />
       <entry key="328d4f62-96e6-4de8-9df5-32432e61c13d" />
-      <entry key="58a3c858-f98b-45eb-886f-92f923cc5e8e">
-        <set>
-          <option value="file://$PROJECT_DIR$/apps/backend/src/receipts/receipts.controller.ts" />
-          <option value="file://$PROJECT_DIR$/apps/backend/src/receipts/receipts.service.ts" />
-          <option value="file://$PROJECT_DIR$/apps/backend/src/common/decorators/household-header.decorator.ts" />
-        </set>
-      </entry>
+      <entry key="58a3c858-f98b-45eb-886f-92f923cc5e8e" />
       <entry key="d73d6a15-75c8-4522-a918-48e9a2210ac4" />
     </pendingWorkingSetItems>
   </component>

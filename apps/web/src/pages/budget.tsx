@@ -26,7 +26,7 @@ interface BudgetOverview {
 
 export default function BudgetPage() {
   const { user, loading } = useAuth();
-  const { isLoading: isLoadingHouseholds, households } = useHousehold();
+  const { isLoading: isLoadingHouseholds, households, selectedHouseholdIds } = useHousehold();
   const client = useApiClient();
 
   const [budgetOverview, setBudgetOverview] = useState<BudgetOverview | null>(null);
@@ -36,23 +36,34 @@ export default function BudgetPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const previousMonthRef = useRef<string | null>(null);
 
+  // Use first selected household, or first household if none selected
+  const selectedHouseholdId = selectedHouseholdIds.length > 0 
+    ? selectedHouseholdIds[0] 
+    : (households.length > 0 ? households[0].id : '');
+
   useEffect(() => {
     // Wait for auth and households to finish loading
-    // Only load if month/year changed or first load
-    const currentMonthKey = `${selectedYear}-${selectedMonth}`;
-    if (user && !loading && !isLoadingHouseholds && households.length > 0) {
-      if (previousMonthRef.current !== currentMonthKey) {
-        previousMonthRef.current = currentMonthKey;
+    // Reload when month/year/household selection changes
+    const currentKey = `${selectedYear}-${selectedMonth}-${selectedHouseholdId}`;
+    if (user && !loading && !isLoadingHouseholds && households.length > 0 && selectedHouseholdId) {
+      if (previousMonthRef.current !== currentKey) {
+        previousMonthRef.current = currentKey;
+        loadBudgetOverview();
+      } else {
+        // Reload when household selection changes (but month/year haven't)
         loadBudgetOverview();
       }
     }
-  }, [user, loading, isLoadingHouseholds, households.length, selectedMonth, selectedYear]);
+  }, [user, loading, isLoadingHouseholds, households.length, selectedMonth, selectedYear, selectedHouseholdId, selectedHouseholdIds.join(',')]);
 
   const loadBudgetOverview = async () => {
+    if (!selectedHouseholdId) return;
+
     setIsLoading(true);
     try {
       const data = await client.get<BudgetOverview>(
-        `/categories/budget-overview?month=${selectedMonth}&year=${selectedYear}`
+        `/categories/budget-overview?month=${selectedMonth}&year=${selectedYear}`,
+        { householdIds: [selectedHouseholdId] }
       );
       setBudgetOverview(data);
     } catch (error) {
@@ -113,9 +124,25 @@ export default function BudgetPage() {
 
             <MessageAlert message={message} />
 
-            {/* Date Selector */}
+            {/* Filters */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/60 p-6 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {households.length > 1 && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Household</label>
+                    <select
+                      value={selectedHouseholdId}
+                      onChange={(e) => setSelectedHouseholdId(e.target.value)}
+                      className="block w-full px-4 py-2 border border-slate-300 rounded-lg"
+                    >
+                      {households.map((household) => (
+                        <option key={household.id} value={household.id}>
+                          {household.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">Month</label>
                   <select
