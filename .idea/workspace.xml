@@ -4,12 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e011f42f-86c7-4082-9bc2-830d6e78ef21" name="Changes" comment="Addin ENV">
+    <list default="true" id="e011f42f-86c7-4082-9bc2-830d6e78ef21" name="Changes" comment="Vercel Serverless">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/apps/backend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/.env.example" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/api/receipts/[id]/photo.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/api/receipts/[id]/photo.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/api/users/households.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/api/users/households.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -248,7 +244,7 @@
       <workItem from="1762586348630" duration="262000" />
       <workItem from="1762586625549" duration="87000" />
       <workItem from="1762586721988" duration="2472000" />
-      <workItem from="1763108751404" duration="2888000" />
+      <workItem from="1763108751404" duration="5612000" />
     </task>
     <task id="LOCAL-00001" summary="WIP V2">
       <option name="closed" value="true" />
@@ -266,7 +262,23 @@
       <option name="project" value="LOCAL" />
       <updated>1763109896596</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Addin ENV">
+      <option name="closed" value="true" />
+      <created>1763113394038</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1763113394038</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Vercel Serverless">
+      <option name="closed" value="true" />
+      <created>1763114433606</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1763114433606</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -286,7 +298,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="WIP V2" />
     <MESSAGE value="Addin ENV" />
-    <option name="LAST_COMMIT_MESSAGE" value="Addin ENV" />
+    <MESSAGE value="Vercel Serverless" />
+    <option name="LAST_COMMIT_MESSAGE" value="Vercel Serverless" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
