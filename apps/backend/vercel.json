@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/src/serverless.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dist/src/serverless.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+

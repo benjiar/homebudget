@@ -1,9 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { INestApplication } from '@nestjs/common';
 import * as express from 'express';
 
-async function bootstrap() {
+/**
+ * Creates and configures the NestJS application
+ * This function is used both for local development and serverless deployments
+ */
+export async function createApp(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule);
 
   // Increase body size limit for file uploads (15MB)
@@ -55,8 +60,25 @@ async function bootstrap() {
     next(err);
   });
 
+  // Initialize the app (required for serverless)
+  await app.init();
+
+  return app;
+}
+
+/**
+ * Bootstrap function for local development
+ * Starts the server on the specified port
+ */
+async function bootstrap() {
+  const app = await createApp();
   await app.listen(process.env.BACKEND_PORT || 3001);
   console.log(`Backend application is running on: ${await app.getUrl()}`);
   console.log('Logging enabled for all requests');
 }
-bootstrap();
+
+// Only run bootstrap if this file is executed directly (not imported)
+// This check works for both CommonJS and ES modules
+if (typeof require !== 'undefined' && require.main === module) {
+  bootstrap();
+}
