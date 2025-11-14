@@ -4,29 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e011f42f-86c7-4082-9bc2-830d6e78ef21" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/apps/backend/src/common/decorators/household-header.decorator.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/apps/web/src/components/HouseholdSelector.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/apps/web/src/contexts/HouseholdContext.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SUPABASE_SETUP.md" beforeDir="false" afterPath="$PROJECT_DIR$/SUPABASE_SETUP.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/backend/src/invitations/invitations.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/backend/src/invitations/invitations.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/backend/src/invitations/invitations.module.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/backend/src/invitations/invitations.module.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/backend/src/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/backend/src/main.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/backend/src/receipts/receipts.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/backend/src/receipts/receipts.controller.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/backend/src/receipts/receipts.service.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/backend/src/receipts/receipts.service.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/backend/src/users/users.controller.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/backend/src/users/users.controller.ts" afterDir="false" />
+    <list default="true" id="e011f42f-86c7-4082-9bc2-830d6e78ef21" name="Changes" comment="WIP V2">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/apps/web/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/.env.example" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/next-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/next-env.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/_app.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/_app.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/api/users/households.ts" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/api/users/households.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/auth/callback.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/auth/callback.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/categories.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/categories.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/apps/web/src/pages/receipts.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/pages/receipts.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pnpm-lock.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/pnpm-lock.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/apps/web/src/contexts/AuthContext.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/apps/web/src/contexts/AuthContext.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,60 +29,60 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;Nx.api:build.executor&quot;: &quot;Run&quot;,
-    &quot;Nx.api:clean.executor&quot;: &quot;Run&quot;,
-    &quot;Nx.api:serve.executor&quot;: &quot;Run&quot;,
-    &quot;Nx.auth:serve.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;dev.nx.console.last_ai_configure_notification_timestamp&quot;: &quot;1762339064406&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/benjamin.arbibe/git/perso/homebudget&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;pnpm&quot;,
-    &quot;npm.build:all.executor&quot;: &quot;Run&quot;,
-    &quot;npm.dev.executor&quot;: &quot;Run&quot;,
-    &quot;npm.types &gt; build.executor&quot;: &quot;Run&quot;,
-    &quot;prettierjs.PrettierConfiguration.Package&quot;: &quot;/Users/benjamin.arbibe/git/perso/homebudget/node_modules/prettier&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/benjamin.arbibe/Library/Application Support/JetBrains/IntelliJIdea2025.2/plugins/javascript-plugin/jsLanguageServicesImpl/external&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Nx.api:build.executor": "Run",
+    "Nx.api:clean.executor": "Run",
+    "Nx.api:serve.executor": "Run",
+    "Nx.auth:serve.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "dev.nx.console.last_ai_configure_notification_timestamp": "1763108813470",
+    "git-widget-placeholder": "main",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/benjamin.arbibe/git/perso/homebudget",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "pnpm",
+    "npm.build:all.executor": "Run",
+    "npm.dev.executor": "Run",
+    "npm.types > build.executor": "Run",
+    "prettierjs.PrettierConfiguration.Package": "/Users/benjamin.arbibe/git/perso/homebudget/node_modules/prettier",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "ts.external.directory.path": "/Users/benjamin.arbibe/Library/Application Support/JetBrains/IntelliJIdea2025.2/plugins/javascript-plugin/jsLanguageServicesImpl/external",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;dev.nx.console.project_details_files&quot;: [
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/auth/project.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/auth/package.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/auth/.eslintrc.js&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/web/project.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/web/package.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/web/.eslintrc.js&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/packages/ui/project.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/packages/ui/package.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/packages/ui/.eslintrc.js&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/api/project.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/api/package.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/project.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/package.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/packages/config/package.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/packages/types/project.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/packages/types/package.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/core-backend/project.json&quot;,
-      &quot;/Users/benjamin.arbibe/git/perso/homebudget/apps/core-backend/package.json&quot;
+  "keyToStringList": {
+    "dev.nx.console.project_details_files": [
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/auth/project.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/auth/package.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/auth/.eslintrc.js",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/web/project.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/web/package.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/web/.eslintrc.js",
+      "/Users/benjamin.arbibe/git/perso/homebudget/packages/ui/project.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/packages/ui/package.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/packages/ui/.eslintrc.js",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/api/project.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/api/package.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/project.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/package.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/packages/config/package.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/packages/types/project.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/packages/types/package.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/core-backend/project.json",
+      "/Users/benjamin.arbibe/git/perso/homebudget/apps/core-backend/package.json"
     ]
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="npm.dev">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="homebudget" />
@@ -265,7 +246,17 @@
       <workItem from="1762586348630" duration="262000" />
       <workItem from="1762586625549" duration="87000" />
       <workItem from="1762586721988" duration="2472000" />
+      <workItem from="1763108751404" duration="1130000" />
     </task>
+    <task id="LOCAL-00001" summary="WIP V2">
+      <option name="closed" value="true" />
+      <created>1763108838604</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1763108838604</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -282,11 +273,23 @@
       </map>
     </option>
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="WIP V2" />
+    <option name="LAST_COMMIT_MESSAGE" value="WIP V2" />
+  </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
     <select />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>
