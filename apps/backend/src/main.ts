@@ -66,6 +66,10 @@ export async function createApp(): Promise<INestApplication> {
   return app;
 }
 
+// Export for Vercel @vercel/nestjs builder
+// The builder expects a default export that returns the NestJS app instance
+export default createApp;
+
 /**
  * Bootstrap function for local development
  * Starts the server on the specified port
